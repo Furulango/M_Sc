@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import math as mt
 
 def normalize_data(x):
     return 2 * (x - np.min(x)) / (np.max(x) - np.min(x)) - 1
@@ -65,14 +66,14 @@ class NeuralNetwork:
         return np.mean(output_error**2)
 
 x = np.linspace(-2, 2, 100).reshape(-1, 1)  
-y = x**2
+y = x**2 
 
 # Normalizar
 x_normalized = normalize_data(x)
 y_normalized = normalize_data(y)
 
 # Entrenamiento
-nn = NeuralNetwork(input_size=1, hidden_size=100, output_size=1, learning_rate=0.001)
+nn = NeuralNetwork(input_size=1, hidden_size=10, output_size=1, learning_rate=0.001)
 errors = []
 iterations = []
 
