@@ -108,7 +108,7 @@ def mostrar_dataframe(df):
     print("\nResultados del controlador difuso:")
     print(df)
 
-def guardar_dataframe(df, nombre_archivo="resultados_controlador_difuso.csv"):
+def guardar_dataframe(df, nombre_archivo="error_fuzzificador.csv"):
     """
     Guarda el DataFrame en un archivo CSV.
     
@@ -120,7 +120,7 @@ def guardar_dataframe(df, nombre_archivo="resultados_controlador_difuso.csv"):
     print(f"\nResultados guardados en '{nombre_archivo}'")
 
 def crear_grafico_lineas(df, etiquetas):
-    """0
+    """
     Crea un gráfico de líneas con los valores de membresía.
     
     Args:
@@ -192,7 +192,7 @@ def visualizar_resultados(df):
 
 def main():
 
-    errores_prueba = generar_datos_prueba(1000)
+    errores_prueba = generar_datos_prueba(100)
     
     df = crear_dataframe(errores_prueba)
     

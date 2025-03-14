@@ -21,34 +21,34 @@ def controlador_difuso(error_rad):
     F = [0.0, 0.0, 0.0, 0.0, 0.0]  # [negativogrande, negativopequeño, cero, positivopequeño, positivogrande]
     
     # Calcular membresías
-    if error_rad <= -np.pi/2:
+    if error_rad <= -np.pi/4:
         # Completamente neggrande
         F[0] = 1.0
-    elif error_rad <= -np.pi/4:
+    elif error_rad <= -np.pi/8:
         # Entre neggrande y negpequeño
-        ratio = (error_rad - (-np.pi/2)) / (np.pi/4)  # 0 en -pi/2, 1 en -pi/4
+        ratio = (error_rad - (-np.pi/4)) / (np.pi/8)  # 0 en -pi/4, 1 en -pi/8
         F[0] = 1 - ratio
         F[1] = ratio
     elif error_rad <= 0:
         # Entre negpequeño y cero
-        ratio = (error_rad - (-np.pi/4)) / (np.pi/4)  # 0 en -pi/4, 1 en 0
+        ratio = (error_rad - (-np.pi/8)) / (np.pi/8)  # 0 en -pi/8, 1 en 0
         F[1] = 1 - ratio
         F[2] = ratio
-    elif error_rad <= np.pi/4:
+    elif error_rad <= np.pi/8:
         # Entre cero y pospequeño
-        ratio = (error_rad - 0) / (np.pi/4)  # 0 en 0, 1 en pi/4
+        ratio = (error_rad - 0) / (np.pi/8)  # 0 en 0, 1 en pi/8
         F[2] = 1 - ratio
         F[3] = ratio
-    elif error_rad <= np.pi/2:
+    elif error_rad <= np.pi/4:
         # Entre pospequeño y posgrande
-        ratio = (error_rad - (np.pi/4)) / (np.pi/4)  # 0 en pi/4, 1 en pi/2
+        ratio = (error_rad - (np.pi/8)) / (np.pi/8)  # 0 en pi/8, 1 en pi/4
         F[3] = 1 - ratio
         F[4] = ratio
     else:
         # Completamente posgrande
         F[4] = 1.0
     
-    # Asegurar que la suma sea exactamente 1 (manejar errores de punto flotante)
+    # Asegurar que la suma sea exactamente 1 (posiblers errores de punto flotante)
     total = sum(F)
     if total > 0:
         F = [x/total for x in F]
@@ -65,7 +65,7 @@ def generar_datos_prueba(num_puntos=20):
     Returns:
         numpy.ndarray: Array con los valores de error en radianes.
     """
-    return np.linspace(-np.pi/2, np.pi/2, num_puntos)
+    return np.linspace(-np.pi/4, np.pi/4, num_puntos)
 
 def crear_dataframe(errores_prueba):
     """
@@ -108,7 +108,7 @@ def mostrar_dataframe(df):
     print("\nResultados del controlador difuso:")
     print(df)
 
-def guardar_dataframe(df, nombre_archivo="resultados_controlador_difuso.csv"):
+def guardar_dataframe(df, nombre_archivo="cambioError_fuzzificador.csv"):
     """
     Guarda el DataFrame en un archivo CSV.
     
@@ -174,7 +174,7 @@ def visualizar_resultados(df):
     plt.grid(True, alpha=0.3)
     plt.xlabel("Error (grados)")
     plt.ylabel("Grado de Membresía")
-    plt.title("Funciones de Membresía del Controlador Difuso")
+    plt.title("Funciones de Membresía ")
     plt.legend()
     
     # 2. Mapa de calor (heatmap) para visualizar la matriz de membresía
@@ -185,14 +185,14 @@ def visualizar_resultados(df):
                 yticklabels=etiquetas,
                 cbar_kws={'label': 'Grado de Membresía'})
     plt.xlabel("Error (grados)")
-    plt.title("Mapa de Calor de Valores de Membresía")
+    plt.title("Mapa de Calor Membresía ")
     
     plt.tight_layout()
     plt.show()
 
 def main():
 
-    errores_prueba = generar_datos_prueba(20)
+    errores_prueba = generar_datos_prueba(5)
     
     df = crear_dataframe(errores_prueba)
     
@@ -201,7 +201,7 @@ def main():
     visualizar_resultados(df)
     
     # Guardar resultados
-    #->#guardar_dataframe(df)
+    guardar_dataframe(df)
     
 if __name__ == "__main__":
     main()
