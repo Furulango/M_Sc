@@ -8,4 +8,4 @@
 *.svg
 *.webp
 **/Img/
-*test.py
+#*test.py
