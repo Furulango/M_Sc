@@ -41,7 +41,7 @@ for img_path in path_original:
 
 tr = np.array(tr)
 lb = np.array(lb)
-tr_train, tr_test, lb_train, lb_test = sk.model_selection.train_test_split(tr, lb, test_size=0.2)
+tr_train, tr_test, lb_train, lb_test = sk.model_selection.train_test_split(tr, lb, test_size=0.3)
 knn = sk.neighbors.KNeighborsClassifier(n_neighbors=k)
 knn.fit(tr_train, lb_train)
 pred = knn.predict(tr_test)
@@ -52,7 +52,8 @@ conf_matrix = sk.metrics.confusion_matrix(lb_test, pred)
 # Mostrar la matriz de confusión como un mapa de calor
 
 plt.figure(figsize=(8, 6))
-se.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=np.unique(lb), yticklabels=np.unique(lb))
+se.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=np.unique(lb), 
+           yticklabels=np.unique(lb),annot_kws={"size": 16})
 plt.xlabel('Predicted Labels')
 plt.ylabel('True Labels')
 plt.title(f'Confusion Matrix (Accuracy: {acc:.2f})')
