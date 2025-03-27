@@ -48,7 +48,7 @@ def controlador_difuso(error_rad):
         # Completamente posgrande
         F[4] = 1.0
     
-    # Asegurar que la suma sea exactamente 1 (manejar errores de punto flotante)
+    # Asegurar que la suma sea exactamente 1 (posiblers errores de punto flotante)
     total = sum(F)
     if total > 0:
         F = [x/total for x in F]
@@ -120,7 +120,7 @@ def guardar_dataframe(df, nombre_archivo="resultados_controlador_difuso.csv"):
     print(f"\nResultados guardados en '{nombre_archivo}'")
 
 def crear_grafico_lineas(df, etiquetas):
-    """
+    """0
     Crea un gráfico de líneas con los valores de membresía.
     
     Args:
@@ -174,7 +174,7 @@ def visualizar_resultados(df):
     plt.grid(True, alpha=0.3)
     plt.xlabel("Error (grados)")
     plt.ylabel("Grado de Membresía")
-    plt.title("Funciones de Membresía del Controlador Difuso")
+    plt.title("Funciones de Membresía ")
     plt.legend()
     
     # 2. Mapa de calor (heatmap) para visualizar la matriz de membresía
@@ -185,14 +185,14 @@ def visualizar_resultados(df):
                 yticklabels=etiquetas,
                 cbar_kws={'label': 'Grado de Membresía'})
     plt.xlabel("Error (grados)")
-    plt.title("Mapa de Calor de Valores de Membresía")
+    plt.title("Mapa de Calor Membresía ")
     
     plt.tight_layout()
     plt.show()
 
 def main():
 
-    errores_prueba = generar_datos_prueba(20)
+    errores_prueba = generar_datos_prueba(1000)
     
     df = crear_dataframe(errores_prueba)
     
@@ -201,7 +201,7 @@ def main():
     visualizar_resultados(df)
     
     # Guardar resultados
-    #->#guardar_dataframe(df)
+    guardar_dataframe(df)
     
 if __name__ == "__main__":
     main()
