@@ -1,7 +1,7 @@
-import numpy as np
-
-data = np.loadtxt('data.txt', delimiter='\t', skiprows=1)  # Ajusta si el archivo tiene diferente delimitador
-time = data[:, 0]
-input_signal = data[:, 1]
-output_signal = data[:, 2]
-
+import os
+import funciones as f
+file_path = input("Ingrese la ruta del archivo de datos: ")
+if os.path.exists(file_path):
+    f.main(file_path)
+else:
+    print(f"El archivo {file_path} no existe.")
