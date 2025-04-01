@@ -24,7 +24,7 @@ def calculate_parameter_entropy(population):
         'total_entropy': np.mean(parameter_entropies)
     }
 
-# Modelo correcto de la respuesta de un sistema de segundo orden
+# Modelo respuesta de un sistema de segundo orden
 def transfer_function_response(t, wn, z, K):
     if z < 1.0:
         wd = wn * np.sqrt(1 - z**2)
@@ -57,7 +57,7 @@ def mutate(individual, LowLim, UppLim, mutation_rate=0.2):
             mutated[j] = np.clip(mutated[j], LowLim[j], UppLim[j])
     return mutated
 
-# Cruce mejorado (SBX - Simulated Binary Crossover)
+# Cruce SBX (SBX - Simulated Binary Crossover)
 def sbx_crossover(parent1, parent2, eta=1):
     offspring1 = np.zeros_like(parent1)
     offspring2 = np.zeros_like(parent2)
