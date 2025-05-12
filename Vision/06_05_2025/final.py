@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import re
 
 # Directorios principales
-directorio_base = r"C:\Users\gumev\Desktop\IMAGENES TERMICAS"
+directorio_base = r"D:\GitHub\M_Sc\Vision\Material\IMAGENES TERMICAS"
 carpetas = ["FALLA ALTA", "FALLA BAJA", "SANO"]
 
 def gris_a_temperatura(valor_gris):
@@ -227,6 +227,40 @@ def guardar_resultados_csv(temperaturas, gradientes, nombre_carpeta, directorio_
                     f.write(",")
             f.write("\n")
 
+def guardar_gradientes_unificados(resultados_por_carpeta, directorio_base, roi_names):
+    """
+    Guarda todos los datos de gradientes de todas las carpetas en un único archivo CSV.
+    
+    Args:
+        resultados_por_carpeta: Diccionario con los resultados por carpeta
+        directorio_base: Directorio base donde guardar el archivo
+        roi_names: Nombres de las regiones de interés
+    """
+    # Crear el archivo para todos los gradientes
+    ruta_csv_gradientes = os.path.join(directorio_base, "gradientes_.csv")
+    with open(ruta_csv_gradientes, "w") as f:
+        # Escribir encabezado
+        encabezado = "Carpeta,Imagen"
+        for roi_name in roi_names:
+            encabezado += f",{roi_name}"
+        f.write(encabezado + "\n")
+        
+        # Escribir datos para cada carpeta
+        for carpeta, (_, gradientes) in resultados_por_carpeta.items():
+            max_len = max([len(temps) for temps in gradientes.values()]) if gradientes else 0
+            for i in range(max_len):
+                linea = f"{carpeta},{i+1}"
+                for roi_name in roi_names:
+                    if i < len(gradientes[roi_name]):
+                        linea += f",{gradientes[roi_name][i]:.2f}"
+                    else:
+                        linea += ","
+                f.write(linea + "\n")
+    
+    print(f"\nDatos de gradientes guardados en: {ruta_csv_gradientes}")
+    
+    return ruta_csv_gradientes
+
 def graficar_comparativo(resultados_por_carpeta, directorio_base, roi_names):
     # Crear un único gráfico con 3 subplots (uno por ROI)
     fig, axs = plt.subplots(3, 1, figsize=(14, 18), sharex=True)
@@ -250,7 +284,7 @@ def graficar_comparativo(resultados_por_carpeta, directorio_base, roi_names):
     axs[2].set_xlabel("Número de imagen")
     
     plt.tight_layout()
-    plt.savefig(os.path.join(directorio_base, "comparativo_todos_ROIs.png"))
+    plt.savefig(os.path.join(directorio_base, "comparativo_gradientes.png"))
     plt.show()  # Mostrar el gráfico en pantalla
 
 def main():
@@ -297,6 +331,13 @@ def main():
             print(f"Procesamiento de {carpeta} completo. Resultados guardados.")
         else:
             print(f"No se pudo leer la imagen {ultima_imagen}")
+    
+    # Guardar todos los datos de gradientes en un único archivo CSV
+    if resultados_por_carpeta:
+        print("\nGuardando todos los datos de gradientes en un archivo CSV unificado...")
+        ruta_archivo_gradientes = guardar_gradientes_unificados(resultados_por_carpeta, directorio_base, roi_names)
+        print(f"Archivo CSV de gradientes guardado en: {ruta_archivo_gradientes}")
+
     
     # Crear gráficos comparativos entre carpetas
     if len(resultados_por_carpeta) > 1:

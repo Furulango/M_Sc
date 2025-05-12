@@ -7,3 +7,15 @@
 *.webp
 **/Img/
 #*test.py
+
+# Ignorar carpetas
+Vision/Material/IMAGENES TERMICAS/FALLA ALTA/Compresor/
+Vision/Material/IMAGENES TERMICAS/FALLA ALTA/Condensador/
+Vision/Material/IMAGENES TERMICAS/FALLA ALTA/Valvula_de_expansion/
+Vision/Material/IMAGENES TERMICAS/FALLA BAJA/Compresor/
+Vision/Material/IMAGENES TERMICAS/FALLA BAJA/Condensador/
+Vision/Material/IMAGENES TERMICAS/FALLA BAJA/Valvula_de_expansion/
+Vision/Material/IMAGENES TERMICAS/SANO/Compresor/
+Vision/Material/IMAGENES TERMICAS/SANO/Condensador/
+Vision/Material/IMAGENES TERMICAS/SANO/Valvula_de_expansion/
+Vision/Material/IMAGENES TERMICAS/SANO/Valvula_de_expansion/

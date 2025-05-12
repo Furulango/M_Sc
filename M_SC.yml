@@ -120,7 +120,7 @@ dependencies:
   - pyqt=6.7.1
   - pyqt6-sip=13.9.1
   - pysocks=1.7.1
-  - python=3.9.0
+  - python=3.9
   - python-dateutil=2.9.0post0
   - python-fastjsonschema=2.20.0
   - python-json-logger=3.2.1
@@ -181,6 +181,7 @@ dependencies:
   - zipp=3.21.0
   - zlib=1.2.13
   - zstd=1.5.6
+  - opencv-python=4.11.0.86
   - pip:
       - absl-py==2.2.1
       - astunparse==1.6.3
