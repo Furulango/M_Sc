@@ -1,6 +1,4 @@
 # Ignorar imágenes comunes
-*.png
-*.jpg
 *.jpeg
 *.gif
 *.bmp
