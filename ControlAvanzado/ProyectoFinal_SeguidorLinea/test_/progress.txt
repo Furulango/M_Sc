@@ -1,0 +1,12 @@
+Progreso
+
+- GetLine() test
+    Resultado: OK
+    Descripcion: Conexion BT exitosa ademas del envio del vector de pesos del
+        sensor QRT8, de igual forma el micro muestra en los LEDS la ubicacion
+        de cada sensor activado. 
+- ControlVelocityBothMotors() test
+    Resultado: OK  
+    Descripcion: Se implemento el controlador PID que logra obtener la misma 
+        velocidad en los motores izquiero y derecho.
+- 
