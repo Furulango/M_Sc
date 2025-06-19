@@ -1,0 +1,33 @@
+REPORTE DE ESTABILIDAD DEL ROBOT SEGUIDOR DE LÍNEA
+============================================================
+
+POSITION:
+  RMSE: 94.15265268552983
+  max_error: 280
+  MAE: 79.43629343629344
+  error_std: 91.61813290310283
+  correlation: nan
+  oscillations: 10.424710424710424
+  error_drift: -0.011521410611313444
+  dominant_frequency: 14.157014157014157
+
+VELOCITY_RIGHT:
+  RMSE: 2119.623260489766
+  max_error: 4981
+  MAE: 1897.1447876447876
+  error_std: 1939.871369861621
+  correlation: 0.364489749484501
+  oscillations: 49.22779922779923
+  error_drift: -0.20631425932126987
+  dominant_frequency: 66.6023166023166
+
+VELOCITY_LEFT:
+  RMSE: 1533.9036392542312
+  max_error: 5648
+  MAE: 1221.3552123552124
+  error_std: 1491.5971941435062
+  correlation: 0.3220069000524418
+  oscillations: 29.53667953667954
+  error_drift: 0.010447127652883931
+  dominant_frequency: 14.157014157014157
+
