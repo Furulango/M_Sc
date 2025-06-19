@@ -112,7 +112,7 @@ ax5.set_title('Errores de Velocidad')
 ax5.legend()
 ax5.grid(True, alpha=0.3)
 
-plt.suptitle('Análisis de Seguidor de Línea con Zonas de Riesgo', fontsize=16, fontweight='bold')
+plt.suptitle('Análisis ', fontsize=16, fontweight='bold')
 plt.tight_layout()
 plt.show()
 
