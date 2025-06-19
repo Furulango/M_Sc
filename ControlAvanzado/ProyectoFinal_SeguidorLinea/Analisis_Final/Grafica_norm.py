@@ -101,7 +101,7 @@ ax4.set_title('Velocidades de Motor Izquierda')
 ax4.legend()
 ax4.grid(True, alpha=0.3)
 
-# 5. Errores de Velocidad
+# Errores de Velocidad
 ax5 = fig.add_subplot(gs[1, 2])
 ax5.plot(df['t'], df['vel_d_err'], 'r-', label='Error Vel. Der.', linewidth=2)
 ax5.plot(df['t'], df['vel_i_err'], 'b-', label='Error Vel. Izq.', linewidth=2)
