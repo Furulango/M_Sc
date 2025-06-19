@@ -9,7 +9,9 @@
 #include <stdlib.h>
 
 
+
 #include <xQuP01v0.h>
+
 
 
 #define VdKp 20
@@ -18,13 +20,14 @@
 #define ViKi 10
 
 
+
 // PD controller coefficients
 #define Kp  6.5f
-#define Kd  94.8f
-
+#define Kd  120.8f
 
 // Maximum travel speed
-#define VaMax 300.f
+#define VaMax 500.f
+
 
 
 int velD,velI;
@@ -35,6 +38,7 @@ int ax,ay,az,gx,gy,gz;
 int smp,motD,motI;
 
 
+
 // Variables para monitoreo de lazos
 int errorD, errorI;      // Errores de velocidad
 int errorPos;            // Error de posición
@@ -43,8 +47,10 @@ float dPos;              // Salida del controlador de posición
 int Va;                  // Velocidad adaptativa
 
 
+
 int sFlg = 0;
 int monitorMode = 0;     // 0=telemetría completa, 1=solo lazos, 2=solo posición, 3=solo velocidad
+
 
 
 void speedCtrl(void);
@@ -53,11 +59,13 @@ void readSensors(void);
 void processCommands(void);
 
 
+
 void init(void){
     // IR led half power
     qrt8_led_on(128); 
     // Enable PWMs
     srv2_enable(srv2AXIS1|srv2AXIS2);
+
 
 
     int_init();
@@ -97,13 +105,16 @@ void init(void){
 }
 
 
+
 int getLine(void){
     float d,m;
     float d0,d1,d2,d3,d4,d5,d6,d7;
 
 
+
     // Read sensors
     qrt8_read();
+
 
 
     d7 = qrt8_sensor(0)>>4;
@@ -120,6 +131,7 @@ int getLine(void){
     m = d0+d1+d2+d3+d4+d5+d6+d7;
     return d/m;
 }
+
 
 
 void speedCtrl(void){
@@ -147,6 +159,7 @@ void speedCtrl(void){
 }
 
 
+
 void posCtrl(void){
     float d,e,da;
     static float ep=0;
@@ -167,12 +180,14 @@ void posCtrl(void){
     // Adjust travel speed
     Va = VaMax - 0.0028f * da * da;
 
+
     // Scale correction intensity
     d *= Va/VaMax;
     
     Vdr = Va - (int)d;
     Vir = Va + (int)d;
 }
+
 
 
 void readSensors(void){
@@ -219,6 +234,7 @@ void readSensors(void){
 }
 
 
+
 void processCommands(void){
     char ch;
     static char cmd[3];
@@ -259,6 +275,7 @@ void processCommands(void){
         }
     }
 }
+
 
 
 void sendTelemetry(void){
@@ -332,6 +349,7 @@ void sendTelemetry(void){
             break;
     }
 }
+
 
 
 void main(void){

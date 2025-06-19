@@ -16,13 +16,12 @@
 #define ViKi 10
 
 // PD controller coefficients
-#define Kp 	6.5f
-#define Kd 	94.8f
+#define Kp  6.5f
+#define Kd  94.8f
 
 // Maximum travel speed
 #define VaMax 1200.f
 
-int velD,velI;
 int Vdr,Vir;
 int D;
 long posD,posI;
@@ -32,7 +31,7 @@ int smp,motD,motI;
 // Variables para monitoreo de lazos
 int errorD, errorI;      // Errores de velocidad
 int errorPos;            // Error de posición
-int uD, uI;              // Salidas del controlador de velocidad
+int uD, uI;              // Salidas del controlador (PWM a motores)
 float dPos;              // Salida del controlador de posición
 int Va;                  // Velocidad adaptativa
 
@@ -111,9 +110,9 @@ int getLine(void){
 void speedCtrl(void){
     static int eDi=0,eIi=0;  // Términos integrales
     
-    // Errores de velocidad (guardar para monitoreo)
-    errorD = Vdr - velD;
-    errorI = Vir - velI;
+    // Errores de velocidad
+    errorD = Vdr - uD;  // Comparamos referencia con salida anterior
+    errorI = Vir - uI;
     
     // Acumular términos integrales (con ganancia reducida)
     eDi += errorD;
@@ -124,10 +123,23 @@ void speedCtrl(void){
     uI = 2*errorI + eIi/10;
     
     // Anti-windup simple
-    if(uD > 2047) { uD = 2047; eDi -= errorD; }
-    else if(uD < -2047) { uD = -2047; eDi -= errorD; }
-    if(uI > 2047) { uI = 2047; eIi -= errorI; }
-    else if(uI < -2047) { uI = -2047; eIi -= errorI; }
+    if(uD > 2047) { 
+        uD = 2047; 
+        eDi -= errorD; 
+    }
+    else if(uD < -2047) { 
+        uD = -2047; 
+        eDi -= errorD; 
+    }
+    
+    if(uI > 2047) { 
+        uI = 2047; 
+        eIi -= errorI; 
+    }
+    else if(uI < -2047) { 
+        uI = -2047; 
+        eIi -= errorI; 
+    }
     
     srv2_pwm(uD,uI);
 }
@@ -140,6 +152,7 @@ void posCtrl(void){
     D = getLine();
     e = -D;
     da = D;
+    if(da < 0) da = -da;  // Valor absoluto
     
     // Error de posición para monitoreo
     errorPos = D;
@@ -172,10 +185,11 @@ void readSensors(void){
         k = 0;
         // Current sample
         smp = timer_get_sample(2)>>3;
-        // Read all sensors
-        srv2_vel(velD,velI);
+        
+        // Read position (menos crítico para telemetría)
         srv2_pos(posD,posI);
         
+        // Promediar valores acumulados
         ax = axp>>3; axp=0;
         ay = ayp>>3; ayp=0;
         az = azp>>3; azp=0;
@@ -235,7 +249,8 @@ void processCommands(void){
                 cmd[2] = '\0';
                 if(cmd[1] >= '0' && cmd[1] <= '3'){
                     monitorMode = cmd[1] - '0';
-                    uart_println(">>> Modo cambiado");
+                    uart_print(">>> Modo cambiado a: ");
+                    uart_println(cmd);
                 }
                 cmdIndex = 0;
             }
@@ -255,11 +270,11 @@ void sendTelemetry(void){
             itoa10((int)dPos, num); uart_print(num); uart_print(",");
             itoa10(Va, num); uart_print(num); uart_print(",");
             itoa10(Vdr, num); uart_print(num); uart_print(",");
-            itoa10(velD, num); uart_print(num); uart_print(",");
+            itoa10(uD, num); uart_print(num); uart_print(",");    // PWM motor derecho
             itoa10(errorD, num); uart_print(num); uart_print(",");
             itoa10(uD, num); uart_print(num); uart_print(",");
             itoa10(Vir, num); uart_print(num); uart_print(",");
-            itoa10(velI, num); uart_print(num); uart_print(",");
+            itoa10(uI, num); uart_print(num); uart_print(",");    // PWM motor izquierdo
             itoa10(errorI, num); uart_print(num); uart_print(",");
             itoa10(uI, num); uart_print(num);
             uart_println("");
@@ -277,39 +292,41 @@ void sendTelemetry(void){
             uart_print("VEL_D_REF:");
             itoa10(Vdr, num); uart_println(num);
             uart_print("VEL_D_ACT:");
-            itoa10(velD, num); uart_println(num);
+            itoa10(uD, num); uart_println(num);      // PWM enviado al motor
             uart_print("VEL_D_ERR:");
             itoa10(errorD, num); uart_println(num);
             uart_print("VEL_I_REF:");
             itoa10(Vir, num); uart_println(num);
             uart_print("VEL_I_ACT:");
-            itoa10(velI, num); uart_println(num);
+            itoa10(uI, num); uart_println(num);      // PWM enviado al motor
             uart_print("VEL_I_ERR:");
             itoa10(errorI, num); uart_println(num);
             uart_println("---");
             break;
             
         case 2: // Solo posición
-            uart_print("LINEA:");
-            itoa10(D, num); uart_println(num);
-            uart_print("CORRECCION:");
-            itoa10((int)dPos, num); uart_println(num);
-            uart_print("VELOCIDAD:");
+            uart_print("POS:");
+            itoa10(D, num); uart_print(num);
+            uart_print(",ERR:");
+            itoa10(errorPos, num); uart_print(num);
+            uart_print(",CORR:");
+            itoa10((int)dPos, num); uart_print(num);
+            uart_print(",VEL:");
             itoa10(Va, num); uart_println(num);
             break;
             
-        case 3: // Solo velocidades
-            uart_print("MOTOR_D:");
+        case 3: // Solo velocidades (PWM)
+            uart_print("VEL_D:");
             itoa10(Vdr, num); uart_print(num);
             uart_print("/");
-            itoa10(velD, num); uart_println(num);
-            uart_print("MOTOR_I:");
+            itoa10(uD, num); uart_print(num);        // PWM motor derecho
+            uart_print("/");
+            itoa10(errorD, num); uart_print(num);
+            uart_print(",VEL_I:");
             itoa10(Vir, num); uart_print(num);
             uart_print("/");
-            itoa10(velI, num); uart_println(num);
-            uart_print("ERROR_D:");
-            itoa10(errorD, num); uart_println(num);
-            uart_print("ERROR_I:");
+            itoa10(uI, num); uart_print(num);        // PWM motor izquierdo
+            uart_print("/");
             itoa10(errorI, num); uart_println(num);
             break;
     }
