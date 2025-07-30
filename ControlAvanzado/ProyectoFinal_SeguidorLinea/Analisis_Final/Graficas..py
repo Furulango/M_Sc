@@ -14,7 +14,7 @@ def load_data(filename):
     return pd.DataFrame(data)
 
 # Cargar datos
-df = load_data('line_seeker_2025_v1.json')
+df = load_data('D:\GitHub\M_Sc\ControlAvanzado\ProyectoFinal_SeguidorLinea\Analisis_Final\line_seeker_2025_v1.json')
 
 # Configurar el estilo de las gráficas
 plt.style.use('seaborn-v0_8')

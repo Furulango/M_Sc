@@ -18,6 +18,19 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from datetime import datetime
 
+# Set global matplotlib parameters for larger fonts
+plt.rcParams.update({
+    'font.size': 25,
+    'axes.titlesize': 27,
+    'axes.labelsize': 23,
+    'xtick.labelsize': 25,
+    'ytick.labelsize': 25,
+    'legend.fontsize': 25,
+    'figure.titlesize': 35,
+    'font.family': 'sans-serif',
+    'font.weight': 'normal'
+})
+
 def create_folder_structure(base_path):
     os.makedirs(base_path, exist_ok=True)
     os.makedirs(os.path.join(base_path, 'RandomForest'), exist_ok=True)
@@ -49,17 +62,29 @@ def prepare_data(df):
     if df.isnull().sum().any():
         print("Missing values found. Imputing...")
         df = df.fillna(df.mean())
+    
+    # Check for both 'Carpeta' (Spanish) and 'Folder' (English) column names
+    target_col = None
     if 'Carpeta' in df.columns:
-        unique_labels = df['Carpeta'].unique()
+        target_col = 'Carpeta'
+    elif 'Folder' in df.columns:
+        target_col = 'Folder'
+    elif 'Label' in df.columns:
+        target_col = 'Label'
+    elif 'Class' in df.columns:
+        target_col = 'Class'
+    
+    if target_col:
+        unique_labels = df[target_col].unique()
         label_map = {label: i for i, label in enumerate(unique_labels)}
-        y = df['Carpeta'].map(label_map)
-        feature_cols = [col for col in df.columns if col not in ['Carpeta', 'Imagen']]
+        y = df[target_col].map(label_map)
+        feature_cols = [col for col in df.columns if col not in [target_col, 'Imagen', 'Image', 'Filename']]
         X = df[feature_cols]
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
         return X_scaled, y.values, label_map, feature_cols
     else:
-        print("Error: 'Carpeta' column not found.")
+        print("Error: Target column not found. Expected 'Carpeta', 'Folder', 'Label', or 'Class'.")
         return None, None, None, None
 
 def train_evaluate_model(X, y, label_map, feature_cols, model, model_name, base_path):
@@ -84,15 +109,22 @@ def train_evaluate_model(X, y, label_map, feature_cols, model, model_name, base_
     report = classification_report(y_test, y_pred, target_names=labels, output_dict=True)
     print(classification_report(y_test, y_pred, target_names=labels))
     conf_matrix = confusion_matrix(y_test, y_pred)
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=labels, yticklabels=labels)
-    plt.xlabel('Predicted')
-    plt.ylabel('True')
-    plt.title(f'Confusion Matrix - {model_name}')
+    
+    # Create confusion matrix with larger fonts
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', 
+                xticklabels=labels, yticklabels=labels, 
+                annot_kws={'size': 30}, cbar=False)  # Cambiado: size de 14 a 20, agregado cbar=False
+    plt.xlabel('Predicted', fontsize=24)
+    plt.ylabel('True', fontsize=24)
+    plt.title(f'Confusion Matrix - {model_name}', fontsize=30)
+    plt.xticks(fontsize=18)
+    plt.yticks(fontsize=18)
     plt.tight_layout()
     img_path = os.path.join(base_path, algo_folder, 'images', f'confusion_matrix_{model_name.lower()}.png')
-    plt.savefig(img_path)
+    plt.savefig(img_path, dpi=300, bbox_inches='tight')
     plt.close()
+    
     cv_scores = cross_val_score(model, X, y, cv=5)
     print(f"{model_name} CV mean: {cv_scores.mean():.4f}, std: {cv_scores.std():.4f}")
     model_path = os.path.join(base_path, algo_folder, 'models', f'{model_name.lower()}_model.pkl')
@@ -105,25 +137,27 @@ def generate_roc_curves(models, names, X, y, inv_map, base_path):
     n_classes = len(np.unique(y))
     img_paths = []
     for i in range(n_classes):
-        plt.figure(figsize=(10, 8))
+        plt.figure(figsize=(12, 9))
         for model, name in zip(models, names):
             model.fit(X_train, y_train)
             if hasattr(model, "predict_proba"):
                 y_probs = model.predict_proba(X_test)
                 fpr, tpr, _ = roc_curve(y_test == i, y_probs[:, i])
                 roc_auc = auc(fpr, tpr)
-                plt.plot(fpr, tpr, lw=2, label=f'{name} (AUC = {roc_auc:.2f})')
+                plt.plot(fpr, tpr, lw=3, label=f'{name} (AUC = {roc_auc:.2f})')
         plt.plot([0, 1], [0, 1], 'k--', lw=2)
         plt.xlim([0.0, 1.0])
         plt.ylim([0.0, 1.05])
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title(f'ROC Curve Comparison for class {inv_map[i]}')
-        plt.legend(loc="lower right")
+        plt.xlabel('False Positive Rate', fontsize=24)
+        plt.ylabel('True Positive Rate', fontsize=24)
+        plt.title(f'ROC Curve Comparison for class {inv_map[i]}', fontsize=30)
+        plt.legend(loc="lower right", fontsize=18)
         plt.grid(alpha=0.3)
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
         plt.tight_layout()
         img_path = os.path.join(base_path, 'Comparison', f'roc_comparison_class_{i}.png')
-        plt.savefig(img_path)
+        plt.savefig(img_path, dpi=300, bbox_inches='tight')
         img_paths.append(img_path)
         plt.close()
     return img_paths
@@ -138,26 +172,29 @@ def compare_models(model_results, base_path):
         'Cross-Validation Mean': cv_scores
     })
     print(df_comp)
-    plt.figure(figsize=(12, 6))
+    
+    plt.figure(figsize=(14, 8))
     x = np.arange(len(names))
     width = 0.35
     plt.bar(x - width/2, accuracy, width, label='Test Accuracy')
     plt.bar(x + width/2, cv_scores, width, label='CV Mean')
-    plt.xlabel('Model')
-    plt.ylabel('Score')
-    plt.title('Model Performance Comparison')
-    plt.xticks(x, names)
+    plt.xlabel('Model', fontsize=16)
+    plt.ylabel('Score', fontsize=16)
+    plt.title('Model Performance Comparison', fontsize=18)
+    plt.xticks(x, names, fontsize=12)
+    plt.yticks(fontsize=12)
     plt.ylim(0, 1.0)
-    plt.legend()
+    plt.legend(fontsize=14)
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     for i, v in enumerate(accuracy):
-        plt.text(i - width/2, v + 0.01, f'{v:.4f}', ha='center', fontsize=10)
+        plt.text(i - width/2, v + 0.01, f'{v:.4f}', ha='center', fontsize=12)
     for i, v in enumerate(cv_scores):
-        plt.text(i + width/2, v + 0.01, f'{v:.4f}', ha='center', fontsize=10)
+        plt.text(i + width/2, v + 0.01, f'{v:.4f}', ha='center', fontsize=12)
     plt.tight_layout()
     img_path = os.path.join(base_path, 'Comparison', 'performance_comparison.png')
-    plt.savefig(img_path)
+    plt.savefig(img_path, dpi=300, bbox_inches='tight')
     plt.close()
+    
     csv_path = os.path.join(base_path, 'Comparison', 'comparison_results.csv')
     df_comp.to_csv(csv_path, index=False)
     print(f"Comparison results saved at '{csv_path}'")
