@@ -269,13 +269,22 @@ def save_results_csv(metrics_results, filename="parameter_identification_results
 def execute_algorithm_multiple(algorithm, objective, bounds, config, num_runs=30, real_params=None, t_exp=None, exp_data=None):
     """Executes an algorithm multiple times with unique random seeds"""
     
-    print(f"\nExecuting {algorithm} - {num_runs} runs")
+    print(f"\n{'='*60}")
+    print(f"EXECUTING {algorithm}")
+    print(f"{'='*60}")
+    
+    algorithm_start_time = time.time()
     
     for run in range(num_runs):
+        run_start_time = time.time()
         seed = generate_unique_seed()
         np.random.seed(seed)
         
-        start_time = time.time()
+        # Calculate progress percentages
+        algorithm_progress = ((run + 1) / num_runs) * 100
+        
+        print(f"  Run {run+1:2d}/{num_runs} ({algorithm_progress:5.1f}%) - Seed: {seed}", end=" - ")
+        
         try:
             if algorithm == 'PSO':
                 cost, params = pso_with_progress(objective, bounds, 
@@ -291,7 +300,7 @@ def execute_algorithm_multiple(algorithm, objective, bounds, config, num_runs=30
                                                n_chemotactic=config['n_chemotactic'],
                                                n_reproductive=config['n_reproductive'])
             
-            execution_time = time.time() - start_time
+            execution_time = time.time() - run_start_time
             
             metrics = calculate_complete_metrics(
                 params, real_params, t_exp, exp_data,
@@ -300,10 +309,15 @@ def execute_algorithm_multiple(algorithm, objective, bounds, config, num_runs=30
             
             save_results_csv([metrics])
             
-            print(f"  Run {run+1:2d}/30 - Seed: {seed} - Cost: {cost:.2e} - Error: {metrics['Average_Error_Pct']:.1f}%")
+            print(f"Cost: {cost:.2e} - Error: {metrics['Average_Error_Pct']:.1f}% - Time: {execution_time:.1f}s")
             
         except Exception as e:
-            print(f"  Run {run+1:2d}/30 - ERROR: {str(e)[:50]}")
+            execution_time = time.time() - run_start_time
+            print(f"ERROR: {str(e)[:30]}... - Time: {execution_time:.1f}s")
+    
+    algorithm_total_time = time.time() - algorithm_start_time
+    print(f"  {algorithm} completed in {algorithm_total_time/60:.1f} minutes")
+    print(f"  Average time per run: {algorithm_total_time/num_runs:.1f}s")
 
 def execute_identification():
     """Main function to generate the CSV dataset"""
@@ -326,21 +340,59 @@ def execute_identification():
         'BFO': {'n_bacteria': 20, 'n_chemotactic': 15, 'n_reproductive': 3}
     }
     
-    print("Starting identification - 30 runs per algorithm")
-    print("Auto-saving to: parameter_identification_results.csv")
+    algorithms = ['PSO', 'PSO-SQP', 'BFO']
+    total_runs = len(algorithms) * 30
+    completed_runs = 0
     
-    for algorithm in ['PSO', 'PSO-SQP', 'BFO']:
+    print("="*80)
+    print("PARAMETER IDENTIFICATION PROCESS")
+    print("="*80)
+    print(f"Total algorithms: {len(algorithms)}")
+    print(f"Runs per algorithm: 30")
+    print(f"Total runs: {total_runs}")
+    print(f"Auto-saving to: parameter_identification_results.csv")
+    print("="*80)
+    
+    overall_start_time = time.time()
+    
+    for i, algorithm in enumerate(algorithms):
+        algorithm_number = i + 1
+        overall_progress_start = (completed_runs / total_runs) * 100
+        
+        print(f"\nALGORITHM {algorithm_number}/3: {algorithm}")
+        print(f"Overall progress: {overall_progress_start:.1f}% - {completed_runs}/{total_runs} runs completed")
+        
         execute_algorithm_multiple(algorithm, objective, bounds, config[algorithm], 
                                  num_runs=30, real_params=real_params, 
                                  t_exp=t_exp, exp_data=exp_data)
+        
+        completed_runs += 30
+        overall_progress_end = (completed_runs / total_runs) * 100
+        elapsed_time = time.time() - overall_start_time
+        
+        if completed_runs < total_runs:
+            estimated_total_time = (elapsed_time / completed_runs) * total_runs
+            remaining_time = estimated_total_time - elapsed_time
+            print(f"  Overall progress: {overall_progress_end:.1f}% - {completed_runs}/{total_runs} runs completed")
+            print(f"  Estimated remaining time: {remaining_time/60:.1f} minutes")
+        
+        print(f"  Elapsed time: {elapsed_time/60:.1f} minutes")
     
     # Final summary
+    total_time = time.time() - overall_start_time
+    print(f"\n{'='*80}")
+    print(f"PROCESS COMPLETED - 100.0%")
+    print(f"{'='*80}")
+    print(f"Total execution time: {total_time/60:.1f} minutes")
+    print(f"Average time per run: {total_time/total_runs:.1f}s")
+    
     try:
         import pandas as pd
         df = pd.read_csv("parameter_identification_results.csv")
         print(f"\nFINAL SUMMARY:")
-        print(f"Total runs: {len(df)}")
-        for alg in ['PSO', 'PSO-SQP', 'BFO']:
+        print(f"Total runs in dataset: {len(df)}")
+        print(f"Unique seeds used: {df['Seed'].nunique()}")
+        for alg in algorithms:
             alg_data = df[df['Algorithm'] == alg]
             success_rate = alg_data['Converged_Successfully'].mean() * 100
             average_error = alg_data['Average_Error_Pct'].mean()
