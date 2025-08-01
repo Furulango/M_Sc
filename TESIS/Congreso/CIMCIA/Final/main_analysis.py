@@ -7,7 +7,7 @@ from report_generator import load_and_generate_report, StatisticalReportGenerato
 import pickle
 
 def main():
-    csv_file = "D:\GitHub\M_Sc\TESIS\Congreso\CIMCIA\Final\parameter_identification_results.csv"
+    csv_file = "D:\GitHub\M_Sc\TESIS\Congreso\CIMCIA\Final\clean_parameter_results.csv"
     results_file = "complete_analysis_results.pkl"
     
     if not os.path.exists(csv_file):
