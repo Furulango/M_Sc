@@ -4,6 +4,8 @@
 *.bmp
 *.tiff
 *.svg
+*.pyc
+*.log
 *.webp
 **/Img/
 #*test.py
