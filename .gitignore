@@ -11,6 +11,7 @@
 #*test.py
 
 # Ignorar carpetas
+/.vscode
 Vision/Material/IMAGENES TERMICAS/FALLA ALTA/Compresor/
 Vision/Material/IMAGENES TERMICAS/FALLA ALTA/Condensador/
 Vision/Material/IMAGENES TERMICAS/FALLA ALTA/Valvula_de_expansion/
