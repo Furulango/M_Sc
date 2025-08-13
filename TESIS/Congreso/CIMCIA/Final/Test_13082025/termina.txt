@@ -1,0 +1,91 @@
+================================================================================
+EXPORTING RESULTS TO CSV
+================================================================================
+  ✓ Saved PSO results to results/csv/PSO_results.csv
+    - Total runs: 15
+    - Mean error: 14.19%
+    - Mean time: 67.892s
+  ✓ Saved BFO results to results/csv/BFO_results.csv
+    - Total runs: 15
+    - Mean error: 24.09%
+    - Mean time: 669.679s
+  ✓ Saved Chaotic PSO-DSO results to results/csv/Chaotic_PSO-DSO_results.csv
+    - Total runs: 15
+    - Mean error: 24.33%
+    - Mean time: 70.422s
+
+Phase 2: Generating Motor Performance Comparison Plots...
+
+================================================================================
+GENERATING MOTOR PERFORMANCE COMPARISON PLOTS
+================================================================================
+  ✓ Saved motor comparison plot: results/plots/motor_comparison_Normal_Operation.png
+  ✓ Saved motor comparison plot: results/plots/motor_comparison_High_Temperature.png
+  ✓ Saved motor comparison plot: results/plots/motor_comparison_Severe_Conditions.png
+
+Phase 3: Analyzing Convergence Behavior...
+
+Generating convergence analysis plots...
+  ✓ Saved convergence analysis plot: results/plots/convergence_analysis.png
+
+Phase 4: Statistical Analysis...
+
+================================================================================
+STATISTICAL ANALYSIS
+================================================================================
+
+ANOVA Test for Parameter Errors:
+F-statistic: 30.9489
+P-value: 0.000000
+Significant difference: Yes
+
+Pairwise t-tests (Parameter Errors):
+PSO vs BFO: t=-6.345, p=0.000001 ***
+PSO vs Chaotic PSO-DSO: t=-7.340, p=0.000000 ***
+BFO vs Chaotic PSO-DSO: t=-0.163, p=0.871376 ns
+
+SUMMARY STATISTICS:
+------------------------------------------------------------
+
+PSO:
+  Parameter Error: 14.187% ± 3.922%
+  Optimization Time: 67.892s ± 1.168s
+  Robustness Score: 5.299
+  Success Rate (<5% error): 0.0%
+
+BFO:
+  Parameter Error: 24.092% ± 4.328%
+  Optimization Time: 669.679s ± 45.521s
+  Robustness Score: 10.123
+  Success Rate (<5% error): 0.0%
+
+Chaotic PSO-DSO:
+  Parameter Error: 24.331% ± 3.371%
+  Optimization Time: 70.422s ± 2.163s
+  Robustness Score: 9.608
+  Success Rate (<5% error): 0.0%
+
+Phase 5: Generating Publication Plots...
+  ✓ Saved academic performance analysis plot: results/plots/academic_performance_analysis.png
+
+================================================================================
+STUDY COMPLETED - FILES GENERATED
+================================================================================
+
+📁 GENERATED FILES:
+  CSV Files:
+    • results/csv/PSO_results.csv
+    • results/csv/BFO_results.csv
+    • results/csv/Chaotic_PSO-DSO_results.csv
+
+  PNG Plots:
+    • results/plots/motor_comparison_Normal_Operation.png
+    • results/plots/motor_comparison_High_Temperature.png
+    • results/plots/motor_comparison_Severe_Conditions.png
+    • results/plots/convergence_analysis.png
+    • results/plots/academic_performance_analysis.png
+
+🏆 BEST PERFORMANCE:
+  ✓ Best Accuracy: PSO
+  ✓ Best Speed: PSO
+  ✓ Best Robustness: BFO
