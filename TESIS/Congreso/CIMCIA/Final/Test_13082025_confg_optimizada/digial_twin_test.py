@@ -830,9 +830,9 @@ class AdaptiveDigitalTwinSystem:
                         if alg_name == 'BFO':
                             algorithm = AlgorithmClass(objective, bounds, 
                                                      base_params=self.ideal_params,
-                                                     n_bacteria=50, 
-                                                     n_chemotactic=100,
-                                                     n_reproductive=5,
+                                                     n_bacteria=20, 
+                                                     n_chemotactic=30,
+                                                     n_reproductive=2,
                                                      is_adaptation=False)
                         else:
                             algorithm = AlgorithmClass(objective, bounds,
