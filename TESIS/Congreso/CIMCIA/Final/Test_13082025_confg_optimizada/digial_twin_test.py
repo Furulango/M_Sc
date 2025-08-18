@@ -1441,7 +1441,7 @@ def run_adaptive_digital_twin_study():
     # Execute adaptive study
     print("\nPhase 1: Initial Calibration (Normal Operation)...")
     print("Phase 2: Field Adaptation (High Temperature & Severe Conditions)...")
-    results = twin_system.run_adaptive_study(n_runs=5)  # Increase to 10-15 for paper
+    results = twin_system.run_adaptive_study(n_runs=10)  # Increase to 10-15 for paper
     
     # Generate motor comparison plots
     print("\nGenerating Motor Performance Comparison Plots...")
