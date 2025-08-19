@@ -1,0 +1,58 @@
+{
+  "title": "An\u00e1lisis de Adaptabilidad",
+  "description": "Evaluaci\u00f3n de degradaci\u00f3n al pasar de multi-se\u00f1al a solo corriente",
+  "phase_comparison": {
+    "BFO": {
+      "phase1": {
+        "mean_error": 10.9317691,
+        "std_error": 1.5868128759208886,
+        "mean_time": 731.0258722,
+        "success_rate": 0.0,
+        "runs": 10
+      },
+      "phase2": {
+        "mean_error": 12.58061335,
+        "std_error": 4.7398858756294,
+        "mean_time": 1404.1716393000002,
+        "success_rate": 0.0,
+        "runs": 20
+      }
+    },
+    "PSO": {
+      "phase1": {
+        "mean_error": 4.6602324,
+        "std_error": 1.0572563998240605,
+        "mean_time": 1027.7880475,
+        "success_rate": 70.0,
+        "runs": 10
+      },
+      "phase2": {
+        "mean_error": 10.481691649999998,
+        "std_error": 1.8294141867049096,
+        "mean_time": 255.00645564999996,
+        "success_rate": 0.0,
+        "runs": 20
+      }
+    }
+  },
+  "degradation_metrics": {
+    "BFO": {
+      "error_degradation": 15.083050464357134,
+      "time_improvement": -92.08234519445784,
+      "success_rate_change": 0.0,
+      "adaptability_score": 66.5004804967513
+    },
+    "PSO": {
+      "error_degradation": 124.917788434757,
+      "time_improvement": 75.18880898933591,
+      "success_rate_change": -70.0,
+      "adaptability_score": 0
+    }
+  },
+  "parameter_impact": {
+    "BFO": {
+      "rs": {
+        "phase1_error": 7.275871,
+        "phase2_error": 18.551555399999998,
+        "degradation": 154.9736711934557,
+        "is_problematic": 
