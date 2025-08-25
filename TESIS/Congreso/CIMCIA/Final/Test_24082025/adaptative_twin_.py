@@ -1,5 +1,5 @@
 # adaptive_digital_twin_system_fair.py
-# ADAPTIVE DIGITAL TWIN SYSTEM: Fair Comparison Framework with Multi-core Support
+# ADAPTIVE DIGITAL TWIN SYSTEM: Fair Comparison Framework with Progress Indicators
 # Level 1: Fixed Budget Protocol - All algorithms use same evaluation budget
 # Level 3: Adaptive Convergence Protocol - Stop on convergence criteria
 # For Mechatronics, Control & AI Conference Submission
@@ -17,22 +17,13 @@ import os
 from datetime import datetime
 import pickle
 from functools import partial
-import platform
+from tqdm import tqdm # Import tqdm for progress bars
+
 warnings.filterwarnings('ignore')
 
-# Check if we can use multiprocessing (Windows has issues with pickle)
-USE_MULTIPROCESSING = platform.system() != 'Windows'
-if USE_MULTIPROCESSING:
-    try:
-        from multiprocessing import Pool, cpu_count
-        N_CORES = max(1, cpu_count() - 1)
-    except:
-        USE_MULTIPROCESSING = False
-        N_CORES = 1
-else:
-    N_CORES = 1
-
-print(f"System: {platform.system()}, Multiprocessing: {USE_MULTIPROCESSING}, Cores: {N_CORES}")
+# Multiprocessing has been removed as requested for simplicity and compatibility.
+# The script will now run sequentially.
+print("System configured for sequential processing. Multiprocessing is disabled.")
 
 # Create directories for results
 os.makedirs('results', exist_ok=True)
@@ -173,7 +164,7 @@ def simulate_motor(params, t_span=[0, 2], n_points=500):
                    'power_factor': np.ones(n_points)*1e6}
 
 # ===============================================================================
-# OBJECTIVE FUNCTION CLASSES (Serializable for multiprocessing)
+# OBJECTIVE FUNCTION CLASSES
 # ===============================================================================
 
 class CalibrationObjective:
@@ -246,8 +237,8 @@ class CalibrationObjective:
             # Weighted combination - ALL SIGNALS
             weights = {'current': 0.5, 'torque': 0.3, 'speed': 0.2}
             total_mse = (weights['current'] * current_mse + 
-                       weights['torque'] * torque_mse + 
-                       weights['speed'] * speed_mse)
+                         weights['torque'] * torque_mse + 
+                         weights['speed'] * speed_mse)
             
             # Regularization
             regularization = 0
@@ -414,7 +405,7 @@ class EnhancedAdaptivePSO:
                 init_pos[i] = np.random.uniform(self.bounds[0], self.bounds[1], self.n_dims)
         else:
             init_pos = np.random.uniform(self.bounds[0], self.bounds[1], 
-                                        (self.n_particles, self.n_dims))
+                                         (self.n_particles, self.n_dims))
         
         return np.clip(init_pos, self.bounds[0], self.bounds[1])
     
@@ -461,10 +452,14 @@ class EnhancedAdaptivePSO:
         )
         
         # Perform optimization
+        # MODIFICATION: Changed verbose to an integer to show progress periodically
+        # It will print progress 10 times during the optimization run.
+        progress_reports = 10
+        verbose_freq = max(1, self.max_iter // progress_reports)
         best_cost, best_pos = optimizer.optimize(
             self.pso_objective_wrapper, 
             iters=self.max_iter,
-            verbose=False
+            verbose=verbose_freq
         )
         
         optimization_time = time.time() - start_time
@@ -567,23 +562,26 @@ class EnhancedAdaptiveBFO:
     def optimize(self):
         """Execute BFO optimization with fair comparison"""
         start_time = time.time()
-        iteration_count = 0
         
         mode = "Adaptation" if self.is_adaptation else "Calibration"
         level_str = f"Level {self.comparison_level}"
         
         print(f"    Enhanced BFO ({mode}, {level_str}): {self.S} bacteria, "
               f"budget {self.budget} evals")
-        
+
+        # MODIFICATION: Added tqdm progress bar
+        total_chemo_steps = self.Ned * self.Nre * self.Nc
+        pbar = tqdm(total=total_chemo_steps, desc=f"BFO ({mode})", leave=False)
+
         for l in range(self.Ned):
             for k in range(self.Nre):
                 for j in range(self.Nc):
-                    iteration_count += 1
                     self._update_best()
                     
                     # Check convergence for Level 3
                     if self.comparison_level == 3 and self.check_convergence():
-                        print(f"    BFO converged at iteration {iteration_count}, "
+                        pbar.close()
+                        print(f"    BFO converged at chemotactic step {pbar.n}, "
                               f"evaluations: {self.evaluation_count}")
                         optimization_time = time.time() - start_time
                         return self.best_cost, self.best_pos, optimization_time, self.evaluation_count
@@ -609,15 +607,13 @@ class EnhancedAdaptiveBFO:
                             break
                     
                     self.cost_history.append(self.best_cost)
-                    
-                    # Progress update
-                    if iteration_count % 20 == 0:
-                        progress = (self.evaluation_count / self.budget) * 100
-                        print(f"    BFO ({mode}): {progress:.0f}% - Best: {self.best_cost:.2e}")
-                
+                    pbar.update(1) # Update progress bar
+                    pbar.set_postfix(best_cost=f'{self.best_cost:.2e}')
+
                 self._reproduce()
             self._eliminate_disperse()
         
+        pbar.close() # Close progress bar
         self._update_best()
         optimization_time = time.time() - start_time
         
@@ -766,7 +762,7 @@ class EnhancedAdaptiveChaoticPSODSO:
                 particles[i] = np.random.uniform(self.bounds[0], self.bounds[1], self.n_dims)
         else:
             particles = np.random.uniform(self.bounds[0], self.bounds[1], 
-                                        (self.n_particles, self.n_dims))
+                                          (self.n_particles, self.n_dims))
         
         return np.clip(particles, self.bounds[0], self.bounds[1])
     
@@ -783,7 +779,9 @@ class EnhancedAdaptiveChaoticPSODSO:
         stagnation_counter = 0
         last_best_cost = self.gbest_cost
         
-        for iteration in range(self.max_iter):
+        # MODIFICATION: Added tqdm progress bar for the main loop
+        pbar = tqdm(range(self.max_iter), desc=f"Chaotic PSO-DSO ({mode})", leave=False)
+        for iteration in pbar:
             # Check convergence for Level 3
             if self.comparison_level == 3 and self.check_convergence():
                 print(f"    Chaotic PSO-DSO converged at iteration {iteration}, "
@@ -826,9 +824,9 @@ class EnhancedAdaptiveChaoticPSODSO:
                 v_max *= (self.bounds[1] - self.bounds[0])
                 
                 self.velocities[i] = (w * self.velocities[i] + 
-                                    c1 * r1 * (self.pbest[i] - self.particles[i]) +
-                                    c2 * r2 * (self.gbest - self.particles[i]) +
-                                    chaos_factor * (np.random.rand(self.n_dims) - 0.5))
+                                      c1 * r1 * (self.pbest[i] - self.particles[i]) +
+                                      c2 * r2 * (self.gbest - self.particles[i]) +
+                                      chaos_factor * (np.random.rand(self.n_dims) - 0.5))
                 
                 self.velocities[i] = np.clip(self.velocities[i], -v_max, v_max)
                 
@@ -855,12 +853,9 @@ class EnhancedAdaptiveChaoticPSODSO:
                             self.convergence_evaluation = self.evaluation_count
             
             self.cost_history.append(self.gbest_cost)
-            
-            # Progress update
-            if (iteration + 1) % 20 == 0:
-                progress = ((iteration + 1) / self.max_iter) * 100
-                print(f"    Chaotic PSO-DSO ({mode}): {progress:.0f}% - Best: {self.gbest_cost:.2e}")
+            pbar.set_postfix(best_cost=f'{self.gbest_cost:.2e}')
         
+        pbar.close() # Close the progress bar
         optimization_time = time.time() - start_time
         
         print(f"    Enhanced Chaotic PSO-DSO ({mode}): Completed - Best cost: {self.gbest_cost:.2e}, "
@@ -869,11 +864,11 @@ class EnhancedAdaptiveChaoticPSODSO:
         return self.gbest_cost, self.gbest, optimization_time, self.evaluation_count
 
 # ===============================================================================
-# PARALLEL PROCESSING UTILITIES
+# SEQUENTIAL PROCESSING UTILITY
 # ===============================================================================
 
 def run_single_optimization(args):
-    """Function to run a single optimization (for parallel processing or sequential)"""
+    """Function to run a single optimization sequentially"""
     (alg_name, AlgorithmClass, objective, bounds, base_params, 
      is_adaptation, comparison_level, run_num, scenario_name) = args
     
@@ -882,7 +877,7 @@ def run_single_optimization(args):
     
     # Create and run algorithm
     algorithm = AlgorithmClass(objective, bounds, base_params, 
-                              is_adaptation, comparison_level)
+                               is_adaptation, comparison_level)
     cost, params, opt_time, eval_count = algorithm.optimize()
     
     # Return results
@@ -903,20 +898,13 @@ def run_single_optimization(args):
 # ===============================================================================
 
 class EnhancedAdaptiveDigitalTwinSystem:
-    """Enhanced Adaptive Digital Twin System with Fair Comparison and Multi-core Support"""
+    """Enhanced Adaptive Digital Twin System with Fair Comparison"""
     
-    def __init__(self, ideal_params, comparison_level=1, use_multicore=False):
+    def __init__(self, ideal_params, comparison_level=1):
         self.ideal_params = np.array(ideal_params)
         self.comparison_level = comparison_level  # 1: Fixed Budget, 3: Adaptive Convergence
-        self.use_multicore = use_multicore and USE_MULTIPROCESSING
         
-        # Determine number of cores to use
-        if self.use_multicore:
-            self.n_cores = N_CORES
-        else:
-            self.n_cores = 1
-        
-        print(f"System initialized with {self.n_cores} cores for {'parallel' if self.use_multicore else 'sequential'} processing")
+        print(f"System initialized for sequential processing.")
         
         # Parameter names and physical bounds
         self.param_names = ['rs', 'rr', 'Lls', 'Llr', 'Lm', 'J', 'B']
@@ -996,7 +984,7 @@ class EnhancedAdaptiveDigitalTwinSystem:
         }
     
     def create_calibration_objective(self, measured_current, measured_torque, 
-                                    measured_speed, temperature):
+                                     measured_speed, temperature):
         """Create serializable calibration objective"""
         return CalibrationObjective(
             measured_current, measured_torque, measured_speed,
@@ -1011,19 +999,12 @@ class EnhancedAdaptiveDigitalTwinSystem:
             self.param_bounds, self.temp_coeffs, self.reference_temp
         )
     
-    def run_parallel_optimizations(self, algorithm_tasks):
-        """Run multiple optimizations in parallel or sequential"""
-        
-        if self.use_multicore and len(algorithm_tasks) > 1:
-            with Pool(processes=self.n_cores) as pool:
-                results = pool.map(run_single_optimization, algorithm_tasks)
-        else:
-            # Sequential execution
-            results = []
-            for i, task in enumerate(algorithm_tasks):
-                print(f"      Processing task {i+1}/{len(algorithm_tasks)}...")
-                results.append(run_single_optimization(task))
-        
+    def run_sequential_optimizations(self, algorithm_tasks):
+        """Run multiple optimizations sequentially with a progress bar"""
+        results = []
+        # MODIFICATION: Added tqdm progress bar for the main task loop
+        for task in tqdm(algorithm_tasks, desc="  Overall Progress"):
+            results.append(run_single_optimization(task))
         return results
     
     def run_enhanced_adaptive_study(self, n_runs=10):
@@ -1034,7 +1015,7 @@ class EnhancedAdaptiveDigitalTwinSystem:
         print(f"Comparison Level: {self.comparison_level}")
         print(f"Level 1: Fixed Budget - All algorithms use same evaluation budget")
         print(f"Level 3: Adaptive Convergence - Stop on convergence criteria")
-        print(f"Processing mode: {'Parallel' if self.use_multicore else 'Sequential'}")
+        print(f"Processing mode: Sequential")
         print("="*80)
         
         # Test scenarios
@@ -1047,12 +1028,8 @@ class EnhancedAdaptiveDigitalTwinSystem:
         # Initialize results storage
         for algorithm in self.algorithms.keys():
             self.results[algorithm] = {
-                'costs': [],
-                'errors': [],
-                'times': [],
-                'evaluations': [],
-                'convergence_iterations': [],
-                'convergence_evaluations': [],
+                'costs': [], 'errors': [], 'times': [], 'evaluations': [],
+                'convergence_iterations': [], 'convergence_evaluations': [],
                 'robustness_scores': []
             }
             self.convergence_curves[algorithm] = []
@@ -1080,12 +1057,10 @@ class EnhancedAdaptiveDigitalTwinSystem:
             
             self.scenario_data_storage[scenario['name']] = scenario_data
             
-            # Prepare tasks for parallel execution
+            # Prepare tasks for sequential execution
             all_tasks = []
             
             for alg_name, AlgorithmClass in self.algorithms.items():
-                print(f"\n  Preparing {alg_name} for execution...")
-                
                 for run in range(n_runs):
                     if scenario['phase'] == 1:
                         # Calibration
@@ -1098,7 +1073,7 @@ class EnhancedAdaptiveDigitalTwinSystem:
                         
                         search_factor = 0.2
                         bounds = (self.ideal_params * (1 - search_factor), 
-                                 self.ideal_params * (1 + search_factor))
+                                  self.ideal_params * (1 + search_factor))
                         base_params = self.ideal_params
                         is_adaptation = False
                         
@@ -1115,19 +1090,18 @@ class EnhancedAdaptiveDigitalTwinSystem:
                         search_factor = 0.2
                         base = self.digital_twin_base[alg_name]
                         bounds = (base * (1 - search_factor), 
-                                 base * (1 + search_factor))
+                                  base * (1 + search_factor))
                         base_params = base
                         is_adaptation = True
                     
                     task = (alg_name, AlgorithmClass, objective, bounds, 
-                           base_params, is_adaptation, self.comparison_level, 
-                           run, scenario['name'])
+                            base_params, is_adaptation, self.comparison_level, 
+                            run, scenario['name'])
                     all_tasks.append(task)
             
             # Execute optimizations
-            mode = "parallel" if self.use_multicore else "sequential"
-            print(f"\n  Executing {len(all_tasks)} optimizations in {mode} mode...")
-            optimization_results = self.run_parallel_optimizations(all_tasks)
+            print(f"\n  Executing {len(all_tasks)} optimization tasks sequentially...")
+            optimization_results = self.run_sequential_optimizations(all_tasks)
             
             # Process results
             for result in optimization_results:
@@ -1136,7 +1110,7 @@ class EnhancedAdaptiveDigitalTwinSystem:
                 
                 # Calculate error
                 param_errors = np.abs((params - scenario_data['true_params']) / 
-                                    scenario_data['true_params']) * 100
+                                      scenario_data['true_params']) * 100
                 param_error = np.mean(param_errors)
                 
                 # Update best base for calibration
@@ -1147,12 +1121,9 @@ class EnhancedAdaptiveDigitalTwinSystem:
                 
                 # Store detailed results
                 detailed_run = {
-                    'scenario': scenario['name'],
-                    'phase': scenario['phase'],
-                    'run': result['run'] + 1,
-                    'cost': result['cost'],
-                    'error': param_error,
-                    'time': result['time'],
+                    'scenario': scenario['name'], 'phase': scenario['phase'],
+                    'run': result['run'] + 1, 'cost': result['cost'],
+                    'error': param_error, 'time': result['time'],
                     'evaluations': result['evaluations'],
                     'convergence_iteration': result['convergence_iteration'],
                     'convergence_evaluation': result['convergence_evaluation'],
@@ -1183,7 +1154,7 @@ class EnhancedAdaptiveDigitalTwinSystem:
             # Print scenario summary
             for alg_name in self.algorithms.keys():
                 scenario_results = [r for r in self.detailed_results[alg_name] 
-                                  if r['scenario'] == scenario['name']]
+                                    if r['scenario'] == scenario['name']]
                 if scenario_results:
                     errors = [r['error'] for r in scenario_results]
                     times = [r['time'] for r in scenario_results]
@@ -1214,8 +1185,8 @@ class EnhancedAdaptiveDigitalTwinSystem:
                 
                 # Reorder columns
                 base_cols = ['scenario', 'phase', 'run', 'comparison_level', 
-                           'cost', 'error', 'time', 'evaluations', 
-                           'convergence_iteration', 'convergence_evaluation', 'is_best_base']
+                             'cost', 'error', 'time', 'evaluations', 
+                             'convergence_iteration', 'convergence_evaluation', 'is_best_base']
                 param_cols = [f'identified_{name}' for name in self.param_names]
                 true_cols = [f'true_{name}' for name in self.param_names]
                 error_cols = [f'percent_error_{name}' for name in self.param_names]
@@ -1265,7 +1236,7 @@ class EnhancedAdaptiveDigitalTwinSystem:
             phase_data = {}
             for alg in algorithms:
                 phase_data[alg] = [r for r in self.detailed_results[alg] 
-                                  if r['phase'] == phase]
+                                   if r['phase'] == phase]
             
             # ANOVA for errors
             if all(len(data) > 0 for data in phase_data.values()):
@@ -1303,7 +1274,7 @@ class EnhancedAdaptiveDigitalTwinSystem:
                     # Convergence analysis for Level 3
                     if self.comparison_level == 3:
                         conv_evals = [r['convergence_evaluation'] for r in phase_data[alg] 
-                                    if r['convergence_evaluation'] > 0]
+                                      if r['convergence_evaluation'] > 0]
                         if conv_evals:
                             print(f"  Convergence: {len(conv_evals)}/{len(phase_data[alg])} runs")
                             print(f"  Mean convergence evals: {np.mean(conv_evals):.0f}")
@@ -1320,7 +1291,7 @@ def run_fair_comparison_study():
     print("This study implements:")
     print("  1. Level 1: Fixed Budget Protocol (40k calibration, 12k adaptation)")
     print("  3. Level 3: Adaptive Convergence Protocol (stop on convergence)")
-    print(f"  - Processing mode: {'Parallel (multi-core)' if USE_MULTIPROCESSING else 'Sequential'}")
+    print(f"  - Processing mode: Sequential (Windows-compatible, no multi-core)")
     print("  - Detailed evaluation tracking and efficiency metrics")
     print("=" * 80)
     
@@ -1334,8 +1305,7 @@ def run_fair_comparison_study():
     
     twin_system_L1 = EnhancedAdaptiveDigitalTwinSystem(
         ideal_motor_params, 
-        comparison_level=1,
-        use_multicore=False  # Set to False to avoid pickle issues
+        comparison_level=1
     )
     results_L1 = twin_system_L1.run_enhanced_adaptive_study(n_runs=10)
     twin_system_L1.statistical_analysis_enhanced()
@@ -1347,8 +1317,7 @@ def run_fair_comparison_study():
     
     twin_system_L3 = EnhancedAdaptiveDigitalTwinSystem(
         ideal_motor_params, 
-        comparison_level=3,
-        use_multicore=False  # Set to False to avoid pickle issues
+        comparison_level=3
     )
     results_L3 = twin_system_L3.run_enhanced_adaptive_study(n_runs=10)
     twin_system_L3.statistical_analysis_enhanced()
@@ -1402,7 +1371,7 @@ def run_fair_comparison_study():
 if __name__ == "__main__":
     print("Starting Enhanced Fair Comparison Study...")
     print("This will run both Level 1 (Fixed Budget) and Level 3 (Adaptive Convergence)")
-    print(f"Processing mode: {'Parallel' if USE_MULTIPROCESSING else 'Sequential (Windows-compatible)'}")
+    print(f"Processing mode: Sequential (multi-core disabled)")
     print("-" * 80)
     
     study_results = run_fair_comparison_study()
