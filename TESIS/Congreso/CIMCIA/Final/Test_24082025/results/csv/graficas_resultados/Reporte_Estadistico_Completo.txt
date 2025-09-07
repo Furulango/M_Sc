@@ -1,0 +1,70 @@
+Fecha: 2025-08-25 09:28:28
+Algoritmos analizados: BFO, PSO, Chaotic PSODSO
+
+ESCENARIO: Normal_Operation
+Estadísticas de Error Global por Algoritmo:
+                 mean    std    min     max  median
+algorithm                                          
+BFO             9.471  3.237  3.796  13.765  10.100
+Chaotic PSODSO  6.106  1.842  3.271   9.032   6.066
+PSO             6.964  1.995  4.036   9.484   6.828
+
+Mejor algoritmo (por mediana): Chaotic PSODSO con 6.066% de error
+
+Análisis detallado por parámetro:
+  rs: Mejor = Chaotic PSODSO (6.135%)
+  rr: Mejor = BFO (6.474%)
+  Lls: Mejor = PSO (5.204%)
+  Llr: Mejor = Chaotic PSODSO (5.290%)
+  Lm: Mejor = Chaotic PSODSO (4.191%)
+  J: Mejor = Chaotic PSODSO (0.994%)
+  B: Mejor = PSO (6.703%)
+--------------------------------------------------
+ESCENARIO: High_Temperature
+Estadísticas de Error Global por Algoritmo:
+                  mean    std    min     max  median
+algorithm                                           
+BFO             12.919  3.025  9.073  20.046  12.171
+Chaotic PSODSO   9.237  0.891  7.753  10.698   9.405
+PSO             11.266  1.530  9.305  14.266  11.095
+
+Mejor algoritmo (por mediana): Chaotic PSODSO con 9.405% de error
+
+Análisis detallado por parámetro:
+  rs: Mejor = PSO (17.037%)
+  rr: Mejor = BFO (13.368%)
+  Lls: Mejor = Chaotic PSODSO (3.679%)
+  Llr: Mejor = Chaotic PSODSO (3.151%)
+  Lm: Mejor = Chaotic PSODSO (4.084%)
+  J: Mejor = PSO (1.043%)
+  B: Mejor = PSO (8.366%)
+--------------------------------------------------
+ESCENARIO: Severe_Conditions
+Estadísticas de Error Global por Algoritmo:
+                  mean    std     min     max  median
+algorithm                                            
+BFO             13.818  3.632  10.079  19.182  12.520
+Chaotic PSODSO  11.022  1.498   8.280  12.979  11.175
+PSO             12.207  2.186   9.361  14.910  12.313
+
+Mejor algoritmo (por mediana): Chaotic PSODSO con 11.175% de error
+
+Análisis detallado por parámetro:
+  rs: Mejor = PSO (16.344%)
+  rr: Mejor = BFO (9.114%)
+  Lls: Mejor = Chaotic PSODSO (3.823%)
+  Llr: Mejor = Chaotic PSODSO (10.837%)
+  Lm: Mejor = Chaotic PSODSO (3.216%)
+  J: Mejor = PSO (3.628%)
+  B: Mejor = PSO (9.818%)
+--------------------------------------------------
+
+ANÁLISIS GENERAL
+Estadísticas generales:
+                  mean    std  median  count
+algorithm                                   
+BFO             12.069  3.717  11.934     30
+Chaotic PSODSO   8.789  2.503   9.340     30
+PSO             10.146  2.972   9.910     30
+
+Mejor algoritmo: Chaotic PSODSO
