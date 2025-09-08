@@ -1,0 +1,26 @@
+============================================================
+MÉTRICAS DE RENDIMIENTO COMPARATIVAS (PERÍODO DE BACKTEST)
+============================================================
+
+LSTM + ALGORITMO GENÉTICO:
+   Retorno Anual: 40.51%
+   Volatilidad Anual: 28.98%
+   Sharpe Ratio: 1.329
+   Max Drawdown: -53.66%
+   Valor Final: $5,169,642
+
+GARCH INVERSA VOLATILIDAD (SIN GA):
+   Retorno Anual: 30.48%
+   Volatilidad Anual: 24.32%
+   Sharpe Ratio: 1.171
+   Max Drawdown: -49.46%
+   Valor Final: $2,189,751
+
+BENCHMARK (EQUIPONDERADO):
+   Retorno Anual: 34.31%
+   Volatilidad Anual: 26.30%
+   Sharpe Ratio: 1.228
+   Max Drawdown: -49.04%
+   Valor Final: $3,021,152
+
+MEJORA EN SHARPE RATIO (LSTM-GA vs Benchmark): 8.2%
