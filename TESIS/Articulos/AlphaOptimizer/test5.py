@@ -17,7 +17,7 @@ Optimizacion de Carteras: Comparativa de Estrategias con Validacion Walk-Forward
                  * Calculo basado en turnover de la cartera en cada rebalanceo
                  * Analisis del impacto de costos en metricas de rendimiento
                  * Comparacion realista entre estrategias incluyendo fricciones de mercado
-19/09/2025 - Version 3.5 - CORRECCION CRITICA: ELIMINACION DE DATA SNOOPING
+09/09/2025 - Version 3.5 - CORRECCION CRITICA: ELIMINACION DE DATA SNOOPING
                  * Implementacion de Walk-Forward Analysis verdadero
                  * Ventana fija de entrenamiento (2 anos) usando solo datos pasados
                  * Evaluacion out-of-sample estricta en datos futuros no vistos
@@ -213,7 +213,7 @@ def run_backtest_walk_forward(data, weight_strategy_fn, **kwargs):
     
     print(f"  -> Ventana de entrenamiento: {training_window} dias ({training_window/252:.1f} anos)")
     print(f"  -> Costos de transaccion: {transaction_cost_rate:.3%} por operacion")
-    print(f"  -> MODO: Walk-Forward Analysis (Sin Data Snooping)")
+    print(f"  -> MODO: Walk-Forward Analysis ")
     
     portfolio_values = []
     weights_history = []
@@ -431,14 +431,14 @@ def plot_results(results, full_data, training_window, weights_history, symbols):
     ax4.set_ylim([0, 1])
 
     plt.tight_layout(pad=3.0)
-    fig.suptitle('Panel de Control - Validacion Walk-Forward Sin Data Snooping', fontsize=22, weight='bold')
+    fig.suptitle('Panel de Control - Validacion Walk-Forward ', fontsize=22, weight='bold')
     plt.subplots_adjust(top=0.92)
     return fig
 
 def main():
     print("="*60)
     print("OPTIMIZACION DE CARTERAS: COMPARATIVA DE ESTRATEGIAS")
-    print("CON VALIDACION WALK-FORWARD (SIN DATA SNOOPING)")
+    print("CON VALIDACION WALK-FORWARD ")
     print("="*60)
     
     symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'INTC']
@@ -477,7 +477,7 @@ def main():
         print(f"\n" + "="*60 + f"\n2. EJECUTANDO BACKTEST WALK-FORWARD: benchmark_equiponderado\n" + "="*60)
         print(f"  -> Ventana de entrenamiento: {training_window} dias ({training_window/252:.1f} anos)")
         print(f"  -> Costos de transaccion: {transaction_cost_rate:.3%} por operacion")
-        print(f"  -> MODO: Walk-Forward Analysis (Sin Data Snooping)")
+        print(f"  -> MODO: Walk-Forward Analysis ")
         
         n_assets = data.shape[1]
         benchmark_weights = np.ones(n_assets) / n_assets
@@ -531,7 +531,7 @@ def main():
         
         report = ["="*60, 
                   "METRICAS DE RENDIMIENTO COMPARATIVAS", 
-                  "VALIDACION WALK-FORWARD (SIN DATA SNOOPING)", 
+                  "VALIDACION WALK-FORWARD ", 
                   "CON COSTOS DE TRANSACCION INCLUIDOS", 
                   "="*60]
         
@@ -593,7 +593,7 @@ def main():
             f"Fecha de ejecucion: {timestamp}",
             "",
             "METODOLOGIA:",
-            "- Walk-Forward Analysis (sin data snooping)",
+            "- Walk-Forward Analysis ",
             "- Entrenamiento solo con datos historicos",
             "- Evaluacion out-of-sample estricta",
             "- Costos de transaccion incluidos",
@@ -629,7 +629,7 @@ def main():
         print(f"[COSTS] Analisis de costos: {costs_filepath}")
         print(f"[FOLDER] Directorio principal: {run_dir}")
         print("="*60)
-        print("[OK] VALIDACION WALK-FORWARD COMPLETADA - SIN DATA SNOOPING")
+        print("[OK] VALIDACION WALK-FORWARD")
         print("="*60)
         
         plt.show()
