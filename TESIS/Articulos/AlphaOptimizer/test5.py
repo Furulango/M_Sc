@@ -1,17 +1,14 @@
 """
-Optimizacion de Carteras: Comparativa de Estrategias - VERSION FINAL CORREGIDA
-Para CIMCIA 2025 - UNAM FES Cuautitlan
-Actualizacion: Se anade una estrategia de Inversa Volatilidad basada unicamente en GARCH,
-sin el uso de Algoritmos Geneticos (GA), para una comparacion mas robusta.
+Optimizacion de Carteras: Comparativa de Estrategias con Validacion Walk-Forward 
 ----------------
-08/09/2025 - Version 3.2 - Panel de Control de Visualizacion
+12/06/2025 - Version 3.2 - Panel de Control de Visualizacion
                  * Se restaura el layout de 2x2 para las graficas.
                  * El panel ahora incluye:
                    1. Grafica principal de rendimiento (con fase de entrenamiento separada).
                    2. Grafica de retornos acumulados durante el backtest.
                    3. Grafico de pastel con la distribucion final de pesos de LSTM-GA.
                    4. Grafico de barras apiladas con la evolucion de pesos de LSTM-GA.
-08/09/2025 - Version 3.3 - Sistema de Guardado Organizado
+07/09/2025 - Version 3.3 - Sistema de Guardado Organizado
                  * Se implementa sistema de carpetas con timestamps unicos
                  * Guardado separado de metricas y graficas
                  * Estructura organizada de directorios tipo "run_{timestamp}"
@@ -20,7 +17,7 @@ sin el uso de Algoritmos Geneticos (GA), para una comparacion mas robusta.
                  * Calculo basado en turnover de la cartera en cada rebalanceo
                  * Analisis del impacto de costos en metricas de rendimiento
                  * Comparacion realista entre estrategias incluyendo fricciones de mercado
-08/09/2025 - Version 3.5 - CORRECCION CRITICA: ELIMINACION DE DATA SNOOPING
+19/09/2025 - Version 3.5 - CORRECCION CRITICA: ELIMINACION DE DATA SNOOPING
                  * Implementacion de Walk-Forward Analysis verdadero
                  * Ventana fija de entrenamiento (2 anos) usando solo datos pasados
                  * Evaluacion out-of-sample estricta en datos futuros no vistos
@@ -200,9 +197,9 @@ def calculate_transaction_cost(old_weights, new_weights, portfolio_value, transa
 
 def run_backtest_walk_forward(data, weight_strategy_fn, **kwargs):
     """
-    Motor de backtesting con validacion walk-forward SIN DATA SNOOPING.
+    Motor de backtesting con validacion walk-forward .
     
-    CORRECCION CRITICA: 
+    CORRECCION 09/09/2025 SIN DATA SNOOPING: 
     - Solo usa ventana fija de datos PASADOS para entrenamiento
     - Evalua rendimiento en periodo FUTURO completamente out-of-sample
     - Elimina el sesgo de optimizacion en el mismo periodo de evaluacion
