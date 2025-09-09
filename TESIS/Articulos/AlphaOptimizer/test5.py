@@ -45,25 +45,16 @@ from datetime import datetime
 warnings.filterwarnings('ignore', category=FutureWarning)
 warnings.filterwarnings('ignore', category=UserWarning)
 
-
-# --- Configuracion General ---
 np.random.seed(42)
 tf.random.set_seed(42)
 
-# ==============================================================================
-# 1. MODULO DE ADQUISICION DE DATOS
-# ==============================================================================
 def download_data(symbols, start, end):
-    print("="*60 + "\n1. DESCARGANDO DATOS...\n" + "="*60)
     data = yf.download(symbols, start=start, end=end, auto_adjust=True)['Close']
     data = data.ffill().dropna()
     print(f"Datos descargados para {len(data.columns)} activos.")
     print(f"Periodo: {data.index[0]:%Y-%m-%d} a {data.index[-1]:%Y-%m-%d} ({len(data)} dias).\n")
     return data
 
-# ==============================================================================
-# 2. MODULOS DE PREDICCION DE VOLATILIDAD
-# ==============================================================================
 def lstm_predict_volatility(prices, lookback=60):
     """Predice la volatilidad usando un modelo LSTM."""
     returns = prices.pct_change().dropna()
@@ -96,7 +87,7 @@ def lstm_predict_volatility(prices, lookback=60):
     pred_scaled = model.predict(last_sequence, verbose=0)
     pred_vol = scaler.inverse_transform(pred_scaled)[0, 0]
     
-    return np.clip(pred_vol, 0.05, 1.0) # Clip para evitar valores extremos
+    return np.clip(pred_vol, 0.05, 1.0)
 
 def garch_predict_volatility(prices):
     """Predice la volatilidad usando un modelo GARCH(1,1)."""
@@ -111,13 +102,10 @@ def garch_predict_volatility(prices):
         predicted_var = forecast.variance.iloc[-1].values[0]
         annualized_vol = np.sqrt(predicted_var * 252) / 100
     except Exception:
-        annualized_vol = returns.std() * np.sqrt(252) / 100 # Fallback
+        annualized_vol = returns.std() * np.sqrt(252) / 100
         
     return np.clip(annualized_vol, 0.05, 1.0)
 
-# ==============================================================================
-# 3. MODULOS DE CONSTRUCCION DE CARTERA
-# ==============================================================================
 def genetic_algorithm_optimizer(expected_returns, cov_matrix, n_generations=50, population_size=100):
     """Algoritmo genetico con restricciones de peso."""
     n_assets = len(expected_returns)
@@ -137,7 +125,7 @@ def genetic_algorithm_optimizer(expected_returns, cov_matrix, n_generations=50, 
             portfolio_vol = np.sqrt(portfolio_var)
             sharpe = portfolio_return / portfolio_vol if portfolio_vol > 0 else -np.inf
             concentration_penalty = np.sum(weights**2)
-            adjusted_sharpe = sharpe - 0.8 * concentration_penalty # Penalizacion 
+            adjusted_sharpe = sharpe - 0.8 * concentration_penalty
             fitness_scores.append(adjusted_sharpe)
         
         fitness_scores = np.array(fitness_scores)
@@ -189,9 +177,6 @@ def inverse_volatility_portfolio(predicted_vols):
     weights = inv_vols / np.sum(inv_vols)
     return weights
 
-# ==============================================================================
-# 4. MODULO DE BACKTESTING SIN DATA SNOOPING - WALK-FORWARD ANALYSIS
-# ==============================================================================
 def calculate_transaction_cost(old_weights, new_weights, portfolio_value, transaction_cost_rate):
     """
     Calcula el costo de transaccion basado en el turnover de la cartera.
@@ -206,10 +191,8 @@ def calculate_transaction_cost(old_weights, new_weights, portfolio_value, transa
         float: Costo total de la transaccion en valor monetario
     """
     if old_weights is None:
-        # Primera transaccion: costo de comprar toda la posicion inicial
         turnover = np.sum(new_weights)
     else:
-        # Turnover = suma de cambios absolutos en pesos
         turnover = np.sum(np.abs(new_weights - old_weights))
     
     transaction_cost = turnover * transaction_cost_rate * portfolio_value
@@ -227,7 +210,7 @@ def run_backtest_walk_forward(data, weight_strategy_fn, **kwargs):
     print(f"\n" + "="*60 + f"\n2. EJECUTANDO BACKTEST WALK-FORWARD: {weight_strategy_fn.__name__}\n" + "="*60)
     
     initial_capital = kwargs.get('initial_capital', 100000)
-    training_window = kwargs.get('training_window', 504)  # 2 anos de entrenamiento
+    training_window = kwargs.get('training_window', 504)
     rebalance_days = kwargs.get('rebalance_days', 30)
     transaction_cost_rate = kwargs.get('transaction_cost_rate', 0.001)
     
@@ -244,30 +227,25 @@ def run_backtest_walk_forward(data, weight_strategy_fn, **kwargs):
     previous_weights = None
     total_transaction_costs = 0
     
-    # Empezar despues de tener suficientes datos para entrenamiento
     start_index = training_window
     
     for i in range(start_index, len(data), rebalance_days):
         current_date = data.index[i]
         print(f"  -> Rebalanceando en {current_date:%Y-%m-%d}...")
         
-        # CRITICO: Solo usar ventana fija de datos PASADOS para entrenamiento
         train_start = max(0, i - training_window)
-        train_end = i  # NO incluye el dia actual ni futuro
+        train_end = i
         
         training_data = data.iloc[train_start:train_end]
         
         print(f"     Entrenando con datos: {training_data.index[0]:%Y-%m-%d} a {training_data.index[-1]:%Y-%m-%d}")
         
-        # Generar pesos usando SOLO datos de entrenamiento
         new_weights = weight_strategy_fn(training_data)
         
-        # Calcular costo de transaccion
         transaction_cost = calculate_transaction_cost(
             previous_weights, new_weights, current_value, transaction_cost_rate
         )
         
-        # Descontar costo de transaccion del valor de la cartera
         current_value -= transaction_cost
         total_transaction_costs += transaction_cost
         
@@ -277,12 +255,10 @@ def run_backtest_walk_forward(data, weight_strategy_fn, **kwargs):
         
         print(f"     Costo de transaccion: ${transaction_cost:,.2f}")
         
-        # Evaluar rendimiento en periodo FUTURO (out-of-sample)
         period_end = min(i + rebalance_days, len(data))
         
         for j in range(i, period_end):
             if j > i:
-                # Aplicar retornos OUT-OF-SAMPLE
                 daily_return = np.dot(new_weights, returns.iloc[j])
                 current_value *= (1 + daily_return)
             portfolio_values.append(current_value)
@@ -297,12 +273,10 @@ def run_backtest_walk_forward(data, weight_strategy_fn, **kwargs):
             np.array(transaction_costs_history),
             total_transaction_costs)
 
-# --- Funciones especificas para cada estrategia ---
 def strategy_lstm_ga(historical_data):
     returns = historical_data.pct_change().dropna()
     expected_returns = returns.mean().values * 252
     cov_matrix = returns.cov().values * 252
-    # La nueva funcion GA devuelve una tupla (pesos, None), solo necesitamos los pesos.
     optimal_weights, _ = genetic_algorithm_optimizer(expected_returns, cov_matrix)
     return optimal_weights
 
@@ -310,24 +284,20 @@ def strategy_garch_inv_vol(historical_data):
     predicted_vols = [garch_predict_volatility(historical_data[symbol]) for symbol in historical_data.columns]
     return inverse_volatility_portfolio(predicted_vols)
 
-# ==============================================================================
-# 5. MODULO DE ANALISIS Y VISUALIZACION
-# ==============================================================================
 def clean_text_for_windows(text):
     """
     Limpia el texto de caracteres Unicode problematicos para Windows.
     """
-    # Diccionario de reemplazos para caracteres problematicos
     replacements = {
-        '\u2713': '+',  # checkmark
-        '\u2705': '[OK]',  # white check mark
-        '\ud83d\udcca': '[GRAFICO]',  # bar chart
-        '\ud83d\udcc8': '[METRICS]',  # chart increasing
-        '\u2699\ufe0f': '[CONFIG]',  # gear
-        '\ud83d\udcb0': '[COSTS]',  # money bag
-        '\ud83d\udcc1': '[FOLDER]',  # folder
-        'n\u0303': 'n',  # ñ
-        'N\u0303': 'N',  # Ñ
+        '\u2713': '+',
+        '\u2705': '[OK]',
+        '\ud83d\udcca': '[GRAFICO]',
+        '\ud83d\udcc8': '[METRICS]',
+        '\u2699\ufe0f': '[CONFIG]',
+        '\ud83d\udcb0': '[COSTS]',
+        '\ud83d\udcc1': '[FOLDER]',
+        'n\u0303': 'n',
+        'N\u0303': 'N',
         'a\u0301': 'a', 'e\u0301': 'e', 'i\u0301': 'i', 'o\u0301': 'o', 'u\u0301': 'u',
         'A\u0301': 'A', 'E\u0301': 'E', 'I\u0301': 'I', 'O\u0301': 'O', 'U\u0301': 'U',
         'u\u0308': 'u', 'U\u0308': 'U'
@@ -336,7 +306,6 @@ def clean_text_for_windows(text):
     for old, new in replacements.items():
         text = text.replace(old, new)
     
-    # Fallback: convertir a ASCII ignorando errores
     try:
         text.encode('ascii')
     except UnicodeEncodeError:
@@ -351,16 +320,12 @@ def safe_write_file(filepath, content):
     if isinstance(content, list):
         content = '\n'.join(content)
     
-    # Limpiar contenido
-    content = clean_text_for_windows(content)
     
     try:
-        # Intentar UTF-8 primero
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(content)
     except UnicodeEncodeError:
         try:
-            # Fallback a ASCII
             with open(filepath, 'w', encoding='ascii', errors='ignore') as f:
                 f.write(content)
         except Exception as e:
@@ -379,7 +344,6 @@ def calculate_metrics(values, total_transaction_costs=0, initial_capital=100000)
     running_max = cumulative.cummax()
     drawdown = (cumulative - running_max) / running_max
     
-    # Metricas de costos de transaccion
     transaction_cost_impact = total_transaction_costs / initial_capital if initial_capital > 0 else 0
     
     metrics = {
@@ -390,7 +354,6 @@ def calculate_metrics(values, total_transaction_costs=0, initial_capital=100000)
         'Valor Final': f"${values.iloc[-1]:,.0f}"
     }
     
-    # Agregar metricas de costos solo si hay costos de transaccion
     if total_transaction_costs > 0:
         metrics['Costos Transaccion'] = f"${total_transaction_costs:,.2f}"
         metrics['Impacto en Rendimiento'] = f"{transaction_cost_impact:.2%}"
@@ -399,12 +362,11 @@ def calculate_metrics(values, total_transaction_costs=0, initial_capital=100000)
 
 def plot_results(results, full_data, training_window, weights_history, symbols):
     """
-    MODIFICADO: Genera un panel de control 2x2 con analisis detallado.
+    Genera panel de control 2x2.
     """
-    print("\n" + "="*60 + "\n3. GENERANDO PANEL DE CONTROL...\n" + "="*60)
+    print("\n" + "="*60 + "\n3.PANEL DE CONTROL...\n" + "="*60)
     fig, axes = plt.subplots(2, 2, figsize=(20, 12))
     
-    # --- Grafica 1: Evolucion del Valor de la Cartera (Principal) ---
     ax1 = axes[0, 0]
     initial_capital = 100000
     backtest_start_date = full_data.index[training_window]
@@ -437,7 +399,6 @@ def plot_results(results, full_data, training_window, weights_history, symbols):
     ax1.grid(True, which='both', linestyle='--', linewidth=0.5)
     ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
 
-    # --- Grafica 2: Retornos Acumulados ---
     ax2 = axes[0, 1]
     for i, (name, data) in enumerate(results.items()):
         cum_returns = (data / data.iloc[0] - 1) * 100
@@ -451,7 +412,6 @@ def plot_results(results, full_data, training_window, weights_history, symbols):
     ax2.legend(fontsize=12)
     ax2.grid(True, linestyle='--')
 
-    # --- Grafica 3: Distribucion Final de Pesos (Pie Chart) ---
     ax3 = axes[1, 0]
     if len(weights_history) > 0:
         final_weights = weights_history[-1]
@@ -461,7 +421,6 @@ def plot_results(results, full_data, training_window, weights_history, symbols):
         ax3.add_artist(centre_circle)
     ax3.set_title('3. Distribucion Final de Pesos (LSTM-GA)', fontsize=16, weight='bold')
 
-    # --- Grafica 4: Evolucion de Pesos ---
     ax4 = axes[1, 1]
     if len(weights_history) > 1:
         bottom = np.zeros(len(weights_history))
@@ -479,9 +438,6 @@ def plot_results(results, full_data, training_window, weights_history, symbols):
     plt.subplots_adjust(top=0.92)
     return fig
 
-# ==============================================================================
-# 6. ORQUESTADOR PRINCIPAL
-# ==============================================================================
 def main():
     print("="*60)
     print("OPTIMIZACION DE CARTERAS: COMPARATIVA DE ESTRATEGIAS")
@@ -489,14 +445,12 @@ def main():
     print("="*60)
     
     symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'INTC']
-    # PERIODO MAS CORTO Y RECIENTE para evitar sesgo de tech boom
-    start_date = '2018-01-01'  # Cambiado de 2020 para ser mas realista
+    start_date = '2018-01-01'
     end_date = '2025-01-01'
-    training_window = 504  # 2 anos de entrenamiento (mas conservador)
-    transaction_cost_rate = 0.001  # 0.1% por transaccion
+    training_window = 504
+    transaction_cost_rate = 0.001
     initial_capital = 100000
     
-    # === SISTEMA DE GUARDADO ORGANIZADO ===
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     output_dir = "results"
     run_dir = os.path.join(output_dir, f"run_walkforward_{timestamp}")
@@ -511,7 +465,6 @@ def main():
     try:
         data = download_data(symbols, start_date, end_date)
         
-        # --- Ejecutar los backtests con validacion walk-forward ---
         lstm_ga_results = run_backtest_walk_forward(data, strategy_lstm_ga, 
                                                   training_window=training_window,
                                                   transaction_cost_rate=transaction_cost_rate,
@@ -524,7 +477,6 @@ def main():
                                                 initial_capital=initial_capital)
         garch_inv_vol_values, _, garch_costs, garch_total_costs = garch_results
         
-        # --- Benchmark Equiponderado con validacion walk-forward ---
         print(f"\n" + "="*60 + f"\n2. EJECUTANDO BACKTEST WALK-FORWARD: benchmark_equiponderado\n" + "="*60)
         print(f"  -> Ventana de entrenamiento: {training_window} dias ({training_window/252:.1f} anos)")
         print(f"  -> Costos de transaccion: {transaction_cost_rate:.3%} por operacion")
@@ -533,7 +485,6 @@ def main():
         n_assets = data.shape[1]
         benchmark_weights = np.ones(n_assets) / n_assets
         
-        # Benchmark walk-forward con costos
         benchmark_values_list = []
         benchmark_dates = []
         benchmark_total_costs = 0
@@ -542,11 +493,10 @@ def main():
         returns = data.pct_change().fillna(0)
         
         start_index = training_window
-        for i in range(start_index, len(data), 30):  # Rebalanceo cada 30 dias
+        for i in range(start_index, len(data), 30):
             current_date = data.index[i]
             print(f"  -> Rebalanceando en {current_date:%Y-%m-%d}...")
             
-            # Calcular costo de transaccion para benchmark
             transaction_cost = calculate_transaction_cost(
                 previous_benchmark_weights, benchmark_weights, benchmark_value, transaction_cost_rate
             )
@@ -556,7 +506,6 @@ def main():
             
             print(f"     Costo de transaccion: ${transaction_cost:,.2f}")
             
-            # Evaluar rendimiento out-of-sample
             period_end = min(i + 30, len(data))
             for j in range(i, period_end):
                 if j > i:
@@ -583,7 +532,6 @@ def main():
             "Benchmark (Equiponderado)": benchmark_total_costs
         }
         
-        # --- Calcular y mostrar metricas ---
         report = ["="*60, 
                   "METRICAS DE RENDIMIENTO COMPARATIVAS", 
                   "VALIDACION WALK-FORWARD (SIN DATA SNOOPING)", 
@@ -596,7 +544,6 @@ def main():
             report.append(f"\n{name.upper()}:")
             report.extend([f"   {m}: {v}" for m, v in metrics.items()])
         
-        # Calculo de mejoras
         lstm_sharpe = float(calculate_metrics(results["LSTM + Algoritmo Genetico"], 
                                             transaction_costs["LSTM + Algoritmo Genetico"], 
                                             initial_capital).get('Sharpe Ratio', '0'))
@@ -608,7 +555,6 @@ def main():
             improvement = ((lstm_sharpe / benchmark_sharpe) - 1) * 100
             report.append(f"\nMEJORA EN SHARPE RATIO (LSTM-GA vs Benchmark): {improvement:.1f}%")
         
-        # Analisis de costos de transaccion
         report.append(f"\n" + "="*40)
         report.append("ANALISIS DE COSTOS DE TRANSACCION")
         report.append("="*40)
@@ -616,7 +562,6 @@ def main():
             impact = costs / initial_capital
             report.append(f"{name}: ${costs:,.2f} ({impact:.2%} del capital inicial)")
         
-        # Nota sobre metodologia
         report.append(f"\n" + "="*40)
         report.append("NOTA METODOLOGICA IMPORTANTE")
         report.append("="*40)
@@ -629,19 +574,14 @@ def main():
         
         print('\n'.join(report))
         
-        # --- Graficar y guardar resultados ---
         fig = plot_results(results, data, training_window, lstm_ga_weights, symbols)
         
-        # === GUARDADO ORGANIZADO DE ARCHIVOS ===
-        # 1. Guardar grafico
         plot_filepath = os.path.join(run_dir, "performance_charts_walkforward.png")
         fig.savefig(plot_filepath, dpi=300, bbox_inches='tight')
         
-        # 2. Guardar reporte de metricas
         metrics_filepath = os.path.join(run_dir, "metrics_report_walkforward.txt")
         safe_write_file(metrics_filepath, report)
         
-        # 3. Guardar datos de configuracion
         config_filepath = os.path.join(run_dir, "config_parameters_walkforward.txt")
         config_info = [
             "PARAMETROS DE CONFIGURACION - WALK-FORWARD ANALYSIS",
@@ -669,19 +609,17 @@ def main():
         
         safe_write_file(config_filepath, config_info)
         
-        # 4. Guardar datos de pesos finales (CSV)
         if len(lstm_ga_weights) > 0:
             weights_df = pd.DataFrame(lstm_ga_weights, columns=symbols)
             weights_filepath = os.path.join(run_dir, "lstm_ga_weights_history_walkforward.csv")
             weights_df.to_csv(weights_filepath, index=False)
             print(f"Historial de pesos guardado en: {weights_filepath}")
         
-        # 5. Guardar analisis de costos de transaccion
         costs_filepath = os.path.join(run_dir, "transaction_costs_analysis_walkforward.csv")
         costs_df = pd.DataFrame({
             'Rebalanceo': range(len(lstm_ga_costs)),
             'LSTM_GA_Costs': lstm_ga_costs,
-            'GARCH_Costs': garch_costs[:len(lstm_ga_costs)]  # Sincronizar longitudes
+            'GARCH_Costs': garch_costs[:len(lstm_ga_costs)]
         })
         costs_df.to_csv(costs_filepath, index=False)
         
