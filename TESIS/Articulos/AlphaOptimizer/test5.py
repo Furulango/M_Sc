@@ -281,35 +281,6 @@ def strategy_garch_inv_vol(historical_data):
     predicted_vols = [garch_predict_volatility(historical_data[symbol]) for symbol in historical_data.columns]
     return inverse_volatility_portfolio(predicted_vols)
 
-def clean_text_for_windows(text):
-    """
-    Limpia el texto de caracteres Unicode problematicos para Windows.
-    """
-    replacements = {
-        '\u2713': '+',
-        '\u2705': '[OK]',
-        '\ud83d\udcca': '[GRAFICO]',
-        '\ud83d\udcc8': '[METRICS]',
-        '\u2699\ufe0f': '[CONFIG]',
-        '\ud83d\udcb0': '[COSTS]',
-        '\ud83d\udcc1': '[FOLDER]',
-        'n\u0303': 'n',
-        'N\u0303': 'N',
-        'a\u0301': 'a', 'e\u0301': 'e', 'i\u0301': 'i', 'o\u0301': 'o', 'u\u0301': 'u',
-        'A\u0301': 'A', 'E\u0301': 'E', 'I\u0301': 'I', 'O\u0301': 'O', 'U\u0301': 'U',
-        'u\u0308': 'u', 'U\u0308': 'U'
-    }
-    
-    for old, new in replacements.items():
-        text = text.replace(old, new)
-    
-    try:
-        text.encode('ascii')
-    except UnicodeEncodeError:
-        text = text.encode('ascii', errors='ignore').decode('ascii')
-    
-    return text
-
 def safe_write_file(filepath, content):
     """
     Escribe archivo de forma segura manejando problemas de codificacion.
