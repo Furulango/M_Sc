@@ -1,0 +1,21 @@
+============================================================
+METRICAS DE RENDIMIENTO (VERSION MULTIVARIADA)
+============================================================
+
+LSTM MULTIVARIADA + GA:
+   Retorno Anual: 20.87%
+   Volatilidad Anual: 28.16%
+   Sharpe Ratio: 0.670
+   Max Drawdown: -53.24%
+   Valor Final: $510,024
+   Costos Transaccion: $6,572.64
+   Impacto en Rendimiento: 6.57%
+
+BENCHMARK (EQUIPONDERADO):
+   Retorno Anual: 34.32%
+   Volatilidad Anual: 28.25%
+   Sharpe Ratio: 1.144
+   Max Drawdown: -49.04%
+   Valor Final: $1,258,169
+   Costos Transaccion: $100.00
+   Impacto en Rendimiento: 0.10%

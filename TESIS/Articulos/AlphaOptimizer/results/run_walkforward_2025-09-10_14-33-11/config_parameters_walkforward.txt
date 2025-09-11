@@ -1,0 +1,20 @@
+PARAMETROS DE CONFIGURACION - WALK-FORWARD ANALYSIS
+==================================================
+Simbolos analizados: AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, INTC
+Fecha de inicio: 2018-01-01
+Fecha de fin: 2025-01-01
+Ventana de entrenamiento: 504 dias (2.0 anos)
+Capital inicial: $100,000
+Frecuencia de rebalanceo: 30 dias
+Costos de transaccion: 0.100% por operacion
+Fecha de ejecucion: 2025-09-10_14-33-11
+
+METODOLOGIA:
+- Walk-Forward Analysis
+- Entrenamiento solo con datos historicos
+- Evaluacion out-of-sample estricta
+- Costos de transaccion incluidos
+
+ESTRATEGIAS IMPLEMENTADAS:
+1. LSTM + Algoritmo Genetico (con reentrenamiento LSTM por ventana)
+2. Benchmark Equiponderado (con costos y walk-forward)

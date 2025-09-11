@@ -1,0 +1,41 @@
+============================================================
+METRICAS DE RENDIMIENTO COMPARATIVAS
+VALIDACION WALK-FORWARD
+CON COSTOS DE TRANSACCION INCLUIDOS
+============================================================
+
+LSTM + ALGORITMO GENETICO:
+   Retorno Anual: 17.29%
+   Volatilidad Anual: 30.83%
+   Sharpe Ratio: 0.496
+   Max Drawdown: -55.66%
+   Valor Final: $221,366
+   Costos Transaccion: $6,257.92
+   Impacto en Rendimiento: 6.26%
+
+BENCHMARK (EQUIPONDERADO):
+   Retorno Anual: 32.37%
+   Volatilidad Anual: 31.69%
+   Sharpe Ratio: 0.958
+   Max Drawdown: -54.76%
+   Valor Final: $404,693
+   Costos Transaccion: $100.00
+   Impacto en Rendimiento: 0.10%
+
+MEJORA EN SHARPE RATIO (LSTM-GA vs Benchmark): -48.2%
+
+========================================
+ANALISIS DE COSTOS DE TRANSACCION
+========================================
+LSTM + Algoritmo Genetico: $6,257.92 (6.26% del capital inicial)
+Benchmark (Equiponderado): $100.00 (0.10% del capital inicial)
+
+========================================
+NOTA METODOLOGICA IMPORTANTE
+========================================
++ Validacion Walk-Forward implementada correctamente
++ Sin data snooping: entrenamiento solo con datos pasados
++ Evaluacion out-of-sample en datos futuros no vistos
++ Costos de transaccion incluidos para realismo
++ Ventana de entrenamiento: 2.0 anos
++ Periodo de evaluacion: 2018-01-01 a 2025-01-01

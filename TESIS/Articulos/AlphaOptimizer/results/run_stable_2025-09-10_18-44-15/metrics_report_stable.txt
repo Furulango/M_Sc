@@ -1,0 +1,21 @@
+============================================================
+METRICAS DE RENDIMIENTO COMPARATIVAS (VERSION ESTABLE)
+============================================================
+
+LSTM (ESTABLE) + GA (CONTROLADO):
+   Retorno Anual: 34.03%
+   Volatilidad Anual: 30.37%
+   Sharpe Ratio: 1.054
+   Max Drawdown: -46.13%
+   Valor Final: $430,548
+   Costos Transaccion: $1,663.71
+   Impacto en Rendimiento: 1.66%
+
+BENCHMARK (EQUIPONDERADO):
+   Retorno Anual: 32.37%
+   Volatilidad Anual: 31.69%
+   Sharpe Ratio: 0.958
+   Max Drawdown: -54.76%
+   Valor Final: $404,693
+   Costos Transaccion: $100.00
+   Impacto en Rendimiento: 0.10%
