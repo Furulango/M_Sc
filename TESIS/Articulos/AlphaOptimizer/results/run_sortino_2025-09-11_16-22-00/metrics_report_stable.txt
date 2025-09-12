@@ -1,0 +1,21 @@
+============================================================
+METRICAS DE RENDIMIENTO (OPTIMIZADO PARA RIESGO)
+============================================================
+
+ESTRATEGIA ENSEMBLE (SORTINO OPT):
+   Retorno Anual: 30.98%
+   Volatilidad Anual: 28.46%
+   Sharpe Ratio: 1.018
+   Max Drawdown: -47.66%
+   Valor Final: $1,219,386
+   Costos de Transacción: $2,002.72
+   Impacto de Costos: 2.00%
+
+BENCHMARK (EQUIPONDERADO):
+   Retorno Anual: 32.98%
+   Volatilidad Anual: 24.82%
+   Sharpe Ratio: 1.248
+   Max Drawdown: -37.91%
+   Valor Final: $1,407,890
+   Costos de Transacción: $100.00
+   Impacto de Costos: 0.10%

@@ -25,7 +25,6 @@ Optimizacion de Carteras: Comparativa de Estrategias con Validacion Walk-Forward
                  * Validacion temporal rigurosa sin sesgos de optimizacion
 09/09/2025 - Version 4.1 - Framework de Backtesting Robusto y Metodología Validada
                  * Fusión final: Se integra la estrategia híbrida (LSTM-GA) con el motor de backtesting Walk-Forward.
-                 * CORRECCIÓN CRÍTICA: La función LSTM (predict_future_volatility) 
                     ahora es un predictor out-of-sample real, eliminando  data snooping.
                  * ROBUSTEZ: Se añaden mecanismos de fallback en las funciones de 
                     LSTM y GA para evitar interrupciones en la ejecución.

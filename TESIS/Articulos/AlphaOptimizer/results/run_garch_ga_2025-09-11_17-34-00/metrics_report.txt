@@ -1,0 +1,23 @@
+============================================================
+METRICAS DE RENDIMIENTO (GARCH + GA)
+============================================================
+
+ESTRATEGIA GARCH+GA (SORTINO OPT):
+    Retorno Anual: 26.92%
+    Volatilidad Anual: 25.35%
+    Sharpe Ratio: 0.983
+    Sortino Ratio: 1.288
+    Max Drawdown: -37.30%
+    Valor Final: $909,575
+    Costos de Transacción: $2,445.14
+    Impacto de Costos: 2.45%
+
+BENCHMARK (EQUIPONDERADO):
+    Retorno Anual: 32.98%
+    Volatilidad Anual: 24.82%
+    Sharpe Ratio: 1.248
+    Sortino Ratio: 1.592
+    Max Drawdown: -37.91%
+    Valor Final: $1,407,890
+    Costos de Transacción: $100.00
+    Impacto de Costos: 0.10%
