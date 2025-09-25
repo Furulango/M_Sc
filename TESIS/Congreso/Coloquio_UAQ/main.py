@@ -1,20 +1,15 @@
 import os
 import time
-import warnings
 import numpy as np
 import pandas as pd
 from scipy.integrate import solve_ivp
-from tqdm import tqdm
 
-warnings.filterwarnings('ignore')
 os.makedirs('results', exist_ok=True)
 
-N_RUNS = 5  # Reducido para pruebas más rápidas
-MAX_EVALUATIONS = 5000  # Reducido para pruebas más rápidas
-
+N_RUNS = 3
 TRUE_PARAMS = np.array([2.45, 1.83, 0.008, 0.008, 0.203, 0.02, 0.001])
 PARAM_NAMES = ['rs', 'rr', 'Lls', 'Llr', 'Lm', 'J', 'B']
-PARAM_BOUNDS = (TRUE_PARAMS * 0.5, TRUE_PARAMS * 1.5)
+PARAM_BOUNDS = (TRUE_PARAMS * 0.8, TRUE_PARAMS * 1.2)  # Rango más pequeño
 
 def induction_motor_model(t, x, params, vqs, vds):
     iqs, ids, iqr, idr, wr = x
@@ -37,257 +32,240 @@ def induction_motor_model(t, x, params, vqs, vds):
         -rr * idr + ws * lqr
     ])
     
-    try:
-        di_dt = np.linalg.solve(L_matrix, v_vector)
-    except np.linalg.LinAlgError:
-        di_dt = np.full(4, 1e6)
-
+    di_dt = np.linalg.solve(L_matrix, v_vector)
     Te = (3 * 4 / 4) * Lm * (iqs * idr - ids * iqr)
     dwr_dt = (Te - B * wr) / J
     
     return np.array([*di_dt, dwr_dt])
 
-def simulate_motor(params, t_span=[0, 1], n_points=200):  # Reducido tiempo y puntos
-    vqs, vds = 220 * np.sqrt(2) / np.sqrt(3), 0
+def simulate_motor_simple(params):
+    """Versión súper simplificada de la simulación"""
+    vqs = 220 * np.sqrt(2) / np.sqrt(3)
+    vds = 0
     initial_state = [0, 0, 0, 0, 0]
+    
+    # Solo 50 puntos en 0.1 segundos
+    t_span = [0, 0.1]
+    n_points = 50
     
     try:
         sol = solve_ivp(
             fun=lambda t, x: induction_motor_model(t, x, params, vqs, vds),
             t_span=t_span,
             y0=initial_state,
-            method='RK45',
-            dense_output=True,
-            rtol=1e-5,  # Tolerancia menos estricta
-            atol=1e-7   # Tolerancia menos estricta
+            method='RK23',  # Método más rápido
+            t_eval=np.linspace(t_span[0], t_span[1], n_points),
+            rtol=1e-3,  # Tolerancia muy relajada
+            atol=1e-5
         )
         
-        t = np.linspace(t_span[0], t_span[1], n_points)
-        iqs, ids, iqr, idr, wr = sol.sol(t)
+        iqs, ids = sol.y[0], sol.y[1]
+        wr = sol.y[4]
         
         Is_mag = np.sqrt(iqs**2 + ids**2)
-        rpm = wr * 60 / (2 * np.pi) * (4 / 2)
+        rpm = wr * 60 / (2 * np.pi)
         
-        return t, {'current': Is_mag, 'rpm': rpm}
+        return Is_mag, rpm
+    except:
+        return np.ones(n_points) * 1000, np.zeros(n_points)
 
-    except Exception:
-        t = np.linspace(t_span[0], t_span[1], n_points)
-        return t, {'current': np.full(n_points, 1e6), 'rpm': np.full(n_points, 1e6)}
-
-class MotorObjective:
+class SimpleObjective:
     def __init__(self, target_current, target_rpm):
         self.target_current = target_current
         self.target_rpm = target_rpm
-        self.current_scale = np.max(target_current) if np.max(target_current) > 0 else 1.0
-        self.rpm_scale = np.max(target_rpm) if np.max(target_rpm) > 0 else 1.0
         self.eval_count = 0
 
     def __call__(self, params):
         self.eval_count += 1
         
         if any(p <= 0 for p in params):
-            return 1e12
-
-        _, sim_outputs = simulate_motor(params, n_points=len(self.target_current))
-        sim_current = sim_outputs['current']
-        sim_rpm = sim_outputs['rpm']
-
-        current_mse = np.mean(((self.target_current - sim_current) / self.current_scale)**2)
-        rpm_mse = np.mean(((self.target_rpm - sim_rpm) / self.rpm_scale)**2)
+            return 1e6
         
-        total_error = 0.7 * current_mse + 0.3 * rpm_mse
+        sim_current, sim_rpm = simulate_motor_simple(params)
         
-        return total_error if np.isfinite(total_error) else 1e12
+        current_error = np.mean((self.target_current - sim_current)**2)
+        rpm_error = np.mean((self.target_rpm - sim_rpm)**2)
+        
+        return current_error + rpm_error * 0.001  # RPM con menos peso
 
-class ParticleSwarmOptimizer:
-    def __init__(self, objective_func, bounds, n_particles=30, max_iter=100):
-        self.objective_func = objective_func
+class SimplePSO:
+    def __init__(self, objective_func, bounds, n_particles=20, max_iter=50):
+        self.obj = objective_func
         self.lb, self.ub = bounds
         self.n_particles = n_particles
         self.max_iter = max_iter
         self.n_dims = len(self.lb)
-        self.c1 = 1.5
-        self.c2 = 1.5
-        self.w = 0.7
 
     def optimize(self):
-        particles = np.random.uniform(self.lb, self.ub, (self.n_particles, self.n_dims))
-        velocities = np.zeros((self.n_particles, self.n_dims))
-        
-        pbest_pos = particles.copy()
-        pbest_cost = np.array([self.objective_func(p) for p in particles])
-        
+        # Inicialización
+        X = np.random.uniform(self.lb, self.ub, (self.n_particles, self.n_dims))
+        V = np.zeros((self.n_particles, self.n_dims))
+        pbest = X.copy()
+        pbest_cost = np.array([self.obj(x) for x in X])
         gbest_idx = np.argmin(pbest_cost)
-        gbest_pos = pbest_pos[gbest_idx].copy()
+        gbest = pbest[gbest_idx].copy()
         gbest_cost = pbest_cost[gbest_idx]
-
-        for _ in range(self.max_iter):
+        
+        print(f"    Iteración inicial - mejor costo: {gbest_cost:.6f}")
+        
+        for it in range(self.max_iter):
+            # Actualizar velocidades y posiciones
             r1, r2 = np.random.rand(2)
+            V = 0.7 * V + 1.5 * r1 * (pbest - X) + 1.5 * r2 * (gbest - X)
+            X = X + V
+            X = np.clip(X, self.lb, self.ub)
             
-            velocities = (self.w * velocities +
-                          self.c1 * r1 * (pbest_pos - particles) +
-                          self.c2 * r2 * (gbest_pos - particles))
+            # Evaluar
+            for i in range(self.n_particles):
+                cost = self.obj(X[i])
+                if cost < pbest_cost[i]:
+                    pbest[i] = X[i]
+                    pbest_cost[i] = cost
+                    if cost < gbest_cost:
+                        gbest = X[i].copy()
+                        gbest_cost = cost
             
-            particles += velocities
-            particles = np.clip(particles, self.lb, self.ub)
+            if it % 10 == 0:
+                print(f"    Iteración {it}/{self.max_iter} - mejor costo: {gbest_cost:.6f}")
+        
+        return gbest_cost, gbest
 
-            current_costs = np.array([self.objective_func(p) for p in particles])
-            
-            improved_mask = current_costs < pbest_cost
-            pbest_pos[improved_mask] = particles[improved_mask]
-            pbest_cost[improved_mask] = current_costs[improved_mask]
-            
-            if np.min(pbest_cost) < gbest_cost:
-                gbest_idx = np.argmin(pbest_cost)
-                gbest_pos = pbest_pos[gbest_idx].copy()
-                gbest_cost = pbest_cost[gbest_idx]
-
-        return gbest_cost, gbest_pos
-
-class GreyWolfOptimizer:
-    def __init__(self, objective_func, bounds, n_wolves=30, max_iter=100):
-        self.objective_func = objective_func
+class SimpleGWO:
+    def __init__(self, objective_func, bounds, n_wolves=20, max_iter=50):
+        self.obj = objective_func
         self.lb, self.ub = bounds
         self.n_wolves = n_wolves
         self.max_iter = max_iter
         self.n_dims = len(self.lb)
 
     def optimize(self):
-        alpha_pos = np.zeros(self.n_dims)
-        alpha_score = float("inf")
-        beta_pos = np.zeros(self.n_dims)
-        beta_score = float("inf")
-        delta_pos = np.zeros(self.n_dims)
-        delta_score = float("inf")
-
-        positions = np.random.uniform(self.lb, self.ub, (self.n_wolves, self.n_dims))
-
+        # Inicialización
+        X = np.random.uniform(self.lb, self.ub, (self.n_wolves, self.n_dims))
+        
+        # Evaluar población inicial
+        fitness = np.array([self.obj(x) for x in X])
+        sorted_idx = np.argsort(fitness)
+        
+        alpha_pos = X[sorted_idx[0]].copy()
+        beta_pos = X[sorted_idx[1]].copy()
+        delta_pos = X[sorted_idx[2]].copy()
+        
+        print(f"    Iteración inicial - mejor costo: {fitness[sorted_idx[0]]:.6f}")
+        
         for it in range(self.max_iter):
-            for i in range(self.n_wolves):
-                fitness = self.objective_func(positions[i, :])
-                
-                # CORRECCIÓN CRÍTICA: Las condiciones estaban mal
-                if fitness < alpha_score:
-                    delta_score = beta_score  # El beta anterior pasa a delta
-                    delta_pos = beta_pos.copy()
-                    beta_score = alpha_score  # El alpha anterior pasa a beta
-                    beta_pos = alpha_pos.copy()
-                    alpha_score = fitness      # El nuevo mejor es alpha
-                    alpha_pos = positions[i, :].copy()
-                elif fitness < beta_score:
-                    delta_score = beta_score  # El beta anterior pasa a delta
-                    delta_pos = beta_pos.copy()
-                    beta_score = fitness      # El nuevo es beta
-                    beta_pos = positions[i, :].copy()
-                elif fitness < delta_score:
-                    delta_score = fitness      # El nuevo es delta
-                    delta_pos = positions[i, :].copy()
-            
             a = 2 - it * (2 / self.max_iter)
-
+            
             for i in range(self.n_wolves):
+                # Actualizar posición basada en alpha, beta, delta
                 r1, r2 = np.random.rand(2)
                 A1 = 2 * a * r1 - a
                 C1 = 2 * r2
-                D_alpha = abs(C1 * alpha_pos - positions[i, :])
-                X1 = alpha_pos - A1 * D_alpha
-
+                X1 = alpha_pos - A1 * abs(C1 * alpha_pos - X[i])
+                
                 r1, r2 = np.random.rand(2)
                 A2 = 2 * a * r1 - a
                 C2 = 2 * r2
-                D_beta = abs(C2 * beta_pos - positions[i, :])
-                X2 = beta_pos - A2 * D_beta
-
+                X2 = beta_pos - A2 * abs(C2 * beta_pos - X[i])
+                
                 r1, r2 = np.random.rand(2)
                 A3 = 2 * a * r1 - a
                 C3 = 2 * r2
-                D_delta = abs(C3 * delta_pos - positions[i, :])
-                X3 = delta_pos - A3 * D_delta
-
-                positions[i, :] = (X1 + X2 + X3) / 3
+                X3 = delta_pos - A3 * abs(C3 * delta_pos - X[i])
+                
+                X[i] = (X1 + X2 + X3) / 3
+                X[i] = np.clip(X[i], self.lb, self.ub)
             
-            positions = np.clip(positions, self.lb, self.ub)
-
-        return alpha_score, alpha_pos
-
-def run_comparison_study():
-    print("Generando datos de referencia del motor...")
-    _, true_outputs = simulate_motor(TRUE_PARAMS)
-    target_current = true_outputs['current']
-    target_rpm = true_outputs['rpm']
-    
-    # Añadir ruido
-    noise_level = 0.01
-    target_current += np.random.normal(0, np.std(target_current) * noise_level, len(target_current))
-    target_rpm += np.random.normal(0, np.std(target_rpm) * noise_level, len(target_rpm))
-
-    algorithms = {
-        "PSO": ParticleSwarmOptimizer,
-        "GWO": GreyWolfOptimizer
-    }
-    
-    all_results = []
-
-    for alg_name, AlgClass in algorithms.items():
-        print(f"\nEjecutando {alg_name} ({N_RUNS} veces)")
+            # Re-evaluar y actualizar líderes
+            fitness = np.array([self.obj(x) for x in X])
+            sorted_idx = np.argsort(fitness)
+            
+            alpha_pos = X[sorted_idx[0]].copy()
+            beta_pos = X[sorted_idx[1]].copy()
+            delta_pos = X[sorted_idx[2]].copy()
+            
+            if it % 10 == 0:
+                print(f"    Iteración {it}/{self.max_iter} - mejor costo: {fitness[sorted_idx[0]]:.6f}")
         
-        for i in tqdm(range(N_RUNS), desc=f"{alg_name}"):
-            start_time = time.time()
-            
-            objective_function = MotorObjective(target_current, target_rpm)
-            
-            n_agents = 30
-            max_iterations = MAX_EVALUATIONS // n_agents
-            
-            optimizer = AlgClass(objective_function, PARAM_BOUNDS, n_agents, max_iterations)
-            
-            best_cost, best_params = optimizer.optimize()
-            
-            elapsed_time = time.time() - start_time
-            evaluations = objective_function.eval_count
-            param_error = np.mean(np.abs((best_params - TRUE_PARAMS) / TRUE_PARAMS)) * 100
+        return fitness[sorted_idx[0]], alpha_pos
 
-            run_result = {
-                'algorithm': alg_name,
-                'run': i + 1,
-                'cost': best_cost,
-                'param_error_perc': param_error,
-                'evaluations': evaluations,
-                'time_s': elapsed_time
-            }
-            for p_name, p_val in zip(PARAM_NAMES, best_params):
-                run_result[f'param_{p_name}'] = p_val
-            
-            all_results.append(run_result)
-
-    results_df = pd.DataFrame(all_results)
-    output_path = "results/pso_vs_gwo_comparison.csv"
-    results_df.to_csv(output_path, index=False, float_format='%.6f')
-    print(f"\nResultados guardados en: {output_path}")
-
-    print("\n" + "="*60)
-    print("RESUMEN DE RESULTADOS")
+def main():
+    print("="*60)
+    print("COMPARACIÓN PSO vs GWO - Versión Simplificada")
     print("="*60)
     
-    # Resumen simple
+    # Generar datos objetivo
+    print("\n1. Generando datos de referencia...")
+    target_current, target_rpm = simulate_motor_simple(TRUE_PARAMS)
+    print(f"   Datos generados: {len(target_current)} puntos")
+    
+    results = []
+    
+    # PSO
+    print("\n2. Ejecutando PSO...")
+    for run in range(N_RUNS):
+        print(f"\n   Run {run+1}/{N_RUNS}:")
+        start = time.time()
+        obj = SimpleObjective(target_current, target_rpm)
+        pso = SimplePSO(obj, PARAM_BOUNDS)
+        best_cost, best_params = pso.optimize()
+        elapsed = time.time() - start
+        
+        param_error = np.mean(np.abs((best_params - TRUE_PARAMS) / TRUE_PARAMS)) * 100
+        
+        results.append({
+            'algorithm': 'PSO',
+            'run': run + 1,
+            'cost': best_cost,
+            'param_error_%': param_error,
+            'time_s': elapsed
+        })
+        print(f"   Completado en {elapsed:.2f}s - Error: {param_error:.2f}%")
+    
+    # GWO
+    print("\n3. Ejecutando GWO...")
+    for run in range(N_RUNS):
+        print(f"\n   Run {run+1}/{N_RUNS}:")
+        start = time.time()
+        obj = SimpleObjective(target_current, target_rpm)
+        gwo = SimpleGWO(obj, PARAM_BOUNDS)
+        best_cost, best_params = gwo.optimize()
+        elapsed = time.time() - start
+        
+        param_error = np.mean(np.abs((best_params - TRUE_PARAMS) / TRUE_PARAMS)) * 100
+        
+        results.append({
+            'algorithm': 'GWO',
+            'run': run + 1,
+            'cost': best_cost,
+            'param_error_%': param_error,
+            'time_s': elapsed
+        })
+        print(f"   Completado en {elapsed:.2f}s - Error: {param_error:.2f}%")
+    
+    # Guardar y mostrar resultados
+    df = pd.DataFrame(results)
+    df.to_csv('results/comparison_simple.csv', index=False)
+    
+    print("\n" + "="*60)
+    print("RESULTADOS FINALES")
+    print("="*60)
+    
     for alg in ['PSO', 'GWO']:
-        alg_data = results_df[results_df['algorithm'] == alg]
+        alg_data = df[df['algorithm'] == alg]
         print(f"\n{alg}:")
-        print(f"  Error promedio: {alg_data['param_error_perc'].mean():.2f}%")
-        print(f"  Mejor error: {alg_data['param_error_perc'].min():.2f}%")
-        print(f"  Tiempo promedio: {alg_data['time_s'].mean():.2f} segundos")
+        print(f"  Error promedio: {alg_data['param_error_%'].mean():.2f}%")
+        print(f"  Tiempo promedio: {alg_data['time_s'].mean():.2f}s")
+        print(f"  Mejor resultado: {alg_data['param_error_%'].min():.2f}%")
     
-    # Determinar ganador
-    pso_mean = results_df[results_df['algorithm'] == 'PSO']['param_error_perc'].mean()
-    gwo_mean = results_df[results_df['algorithm'] == 'GWO']['param_error_perc'].mean()
+    print("\n" + "="*60)
+    pso_err = df[df['algorithm'] == 'PSO']['param_error_%'].mean()
+    gwo_err = df[df['algorithm'] == 'GWO']['param_error_%'].mean()
     
-    print(f"\n{'='*60}")
-    if abs(pso_mean - gwo_mean) < 0.5:
-        print("Ambos algoritmos tienen desempeño similar")
-    elif pso_mean < gwo_mean:
-        print(f"PSO es mejor por {gwo_mean - pso_mean:.2f}%")
+    if pso_err < gwo_err:
+        print(f"GANADOR: PSO (mejor por {gwo_err - pso_err:.2f}%)")
     else:
-        print(f"GWO es mejor por {pso_mean - gwo_mean:.2f}%")
+        print(f"GANADOR: GWO (mejor por {pso_err - gwo_err:.2f}%)")
+    print("="*60)
 
 if __name__ == "__main__":
-    run_comparison_study()
+    main()
