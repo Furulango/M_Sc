@@ -101,7 +101,7 @@ class FullObjective:
 # -----------------------------------------------------------------------------
 
 class SimplePSO:
-    def __init__(self, objective_func, bounds, n_particles=40, max_iter=80):
+    def __init__(self, objective_func, bounds, n_particles=40, max_iter=50):
         self.obj = objective_func
         self.lb, self.ub = bounds
         self.n_particles = n_particles
@@ -117,7 +117,9 @@ class SimplePSO:
         gbest = pbest[gbest_idx].copy()
         gbest_cost = pbest_cost[gbest_idx]
 
-        for it in range(self.max_iter):
+        print(f"     Iteración inicial - mejor costo: {gbest_cost:.6f}")
+
+        for it in range(self.max_iter + 1):
             r1, r2 = np.random.rand(2)
             w = 0.9 - (0.5 * it / self.max_iter)  # peso inercial decreciente
             V = (w * V + 2.0 * r1 * (pbest - X) + 2.0 * r2 * (gbest - X))
@@ -132,11 +134,14 @@ class SimplePSO:
                         gbest = X[i].copy()
                         gbest_cost = cost
 
+            if it % 10 == 0:
+                print(f"     Iteración {it}/{self.max_iter} - mejor costo: {gbest_cost:.6f}")
+
         return gbest_cost, gbest
 
 
 class SimpleGWO:
-    def __init__(self, objective_func, bounds, n_wolves=40, max_iter=80):
+    def __init__(self, objective_func, bounds, n_wolves=40, max_iter=50):
         self.obj = objective_func
         self.lb, self.ub = bounds
         self.n_wolves = n_wolves
@@ -152,7 +157,9 @@ class SimpleGWO:
         beta_pos = X[sorted_idx[1]].copy()
         delta_pos = X[sorted_idx[2]].copy()
 
-        for it in range(self.max_iter):
+        print(f"     Iteración inicial - mejor costo: {fitness[sorted_idx[0]]:.6f}")
+
+        for it in range(self.max_iter + 1):
             a = 2 - it * (2 / self.max_iter)
             for i in range(self.n_wolves):
                 r1, r2 = np.random.rand(2)
@@ -175,6 +182,9 @@ class SimpleGWO:
             fitness = np.array([self.obj(x) for x in X])
             sorted_idx = np.argsort(fitness)
             alpha_pos, beta_pos, delta_pos = X[sorted_idx[0]], X[sorted_idx[1]], X[sorted_idx[2]]
+
+            if it % 10 == 0:
+                print(f"     Iteración {it}/{self.max_iter} - mejor costo: {fitness[sorted_idx[0]]:.6f}")
 
         return fitness[sorted_idx[0]], alpha_pos
 
@@ -243,7 +253,7 @@ def main():
     for alg_name, optimizer_class in algorithms.items():
         print(f"\n2. Ejecutando {alg_name}...")
         for run in range(N_RUNS):
-            print(f"   Run {run+1}/{N_RUNS}...")
+            print(f"   Run {run+1}/{N_RUNS}:")
             start = time.time()
             obj = FullObjective(target_current, target_rpm, target_torque)
             optimizer = optimizer_class(obj, PARAM_BOUNDS)
@@ -259,7 +269,7 @@ def main():
                 'time_s': elapsed,
                 'best_params': best_params
             })
-            print(f"   Tiempo: {elapsed:.2f}s - Error parámetros: {param_error:.2f}%")
+            print(f"   Completado en {elapsed:.2f}s - Error parámetros: {param_error:.2f}%")
 
     df = pd.DataFrame(results)
     df.to_csv('results/comparison_improved.csv', index=False)
