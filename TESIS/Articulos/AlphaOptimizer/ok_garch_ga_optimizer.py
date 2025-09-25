@@ -263,53 +263,75 @@ def calculate_metrics(values, total_costs=0, initial_capital=100000):
     }
 
 def plot_results(results, full_data, training_window, weights_history, symbols, run_dir):
-    print("\n" + "="*60 + "\nGENERANDO PANEL DE CONTROL...\n" + "="*60)
-    fig, axes = plt.subplots(2, 2, figsize=(20, 12))
-    
-    # Gráfico 1: Evolución de Cartera (Log)
-    ax1 = axes[0, 0]
-    for name, data in results.items():
-      linestyle, color = (':', 'orange') if "Benchmark" in name else ('-', 'tab:blue')
-      ax1.plot(data.index, data.values, label=name, linewidth=2.0, linestyle=linestyle, color=color)
-    ax1.set_title('1. Evolucion del Valor de Cartera', fontsize=16, weight='bold')
-    ax1.legend(fontsize=12, loc='upper left')
-    ax1.grid(True, linestyle='--')
-    ax1.set_yscale('log')
+    print("\n" + "="*60 + "\nGENERANDO GRAFICOS INDIVIDUALES...\n" + "="*60)
 
-    # Gráfico 2: Retornos Acumulados
-    ax2 = axes[0, 1]
+    # ==============================
+    # 1. Evolución de Cartera (Log)
+    # ==============================
+    plt.figure(figsize=(10, 6))
+    for name, data in results.items():
+        linestyle, color = (':', 'orange') if "Benchmark" in name else ('-', 'tab:blue')
+        plt.plot(data.index, data.values, label=name, linewidth=2.0, linestyle=linestyle, color=color)
+    plt.title('Evolución del Valor de Cartera', fontsize=16, weight='bold')
+    plt.xlabel("Fecha")
+    plt.ylabel("Valor de la Cartera (escala log)")
+    plt.yscale('log')
+    plt.legend(fontsize=12, loc='upper left')
+    plt.grid(True, linestyle='--')
+    filepath = os.path.join(run_dir, "evolucion_cartera.png")
+    plt.savefig(filepath, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Gráfico guardado: {filepath}")
+
+    # ==============================
+    # 2. Retornos Acumulados
+    # ==============================
+    plt.figure(figsize=(10, 6))
     for name, data in results.items():
         cum_returns = (data / data.iloc[0])
         linestyle, color = (':', 'orange') if "Benchmark" in name else ('-', 'tab:blue')
-        ax2.plot(cum_returns.index, cum_returns.values, label=name, linewidth=2.0, linestyle=linestyle, color=color)
-    ax2.set_title('2. Retornos Acumulados', fontsize=16, weight='bold')
-    ax2.legend(fontsize=12)
-    ax2.grid(True, linestyle='--')
+        plt.plot(cum_returns.index, cum_returns.values, label=name, linewidth=2.0, linestyle=linestyle, color=color)
+    plt.title('Retornos Acumulados', fontsize=16, weight='bold')
+    plt.xlabel("Fecha")
+    plt.ylabel("Retorno acumulado")
+    plt.legend(fontsize=12)
+    plt.grid(True, linestyle='--')
+    filepath = os.path.join(run_dir, "retornos_acumulados.png")
+    plt.savefig(filepath, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Gráfico guardado: {filepath}")
 
-    # Gráfico 3: Distribución Final de Pesos
-    ax3 = axes[1, 0]
+    # ==============================
+    # 3. Distribución Final de Pesos
+    # ==============================
     if len(weights_history) > 0:
+        plt.figure(figsize=(8, 8))
         final_weights = weights_history[-1]
-        ax3.pie(final_weights[final_weights > 0.001], labels=np.array(symbols)[final_weights > 0.001], autopct='%1.1f%%', startangle=90, pctdistance=0.85)
-        ax3.set_title('3. Distribucion Final de Pesos', fontsize=16, weight='bold')
+        plt.pie(final_weights[final_weights > 0.001], 
+                labels=np.array(symbols)[final_weights > 0.001], 
+                autopct='%1.1f%%', startangle=90, pctdistance=0.85)
+        plt.title('Distribución Final de Pesos', fontsize=16, weight='bold')
+        filepath = os.path.join(run_dir, "distribucion_final_pesos.png")
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"Gráfico guardado: {filepath}")
 
-    # Gráfico 4: Evolución de Pesos
-    ax4 = axes[1, 1]
+    # ==============================
+    # 4. Evolución de Pesos
+    # ==============================
     if len(weights_history) > 1:
+        plt.figure(figsize=(12, 6))
         weights_df = pd.DataFrame(weights_history, columns=symbols)
-        weights_df.plot(kind='bar', stacked=True, ax=ax4, colormap='viridis', legend=None)
-    ax4.set_title('4. Evolucion de Pesos en Rebalanceos', fontsize=16, weight='bold')
-    ax4.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
-    ax4.set_xticks(ax4.get_xticks()[::2]) # Mostrar menos etiquetas para legibilidad
-
-    plt.tight_layout(pad=3.0)
-    fig.suptitle('Panel de Control - GARCH+GA v2 (Mejorado)', fontsize=22, weight='bold')
-    plt.subplots_adjust(top=0.92)
-    
-    plot_filepath = os.path.join(run_dir, "performance_charts_v2.png")
-    fig.savefig(plot_filepath, dpi=300, bbox_inches='tight')
-    print(f"Grafico de rendimiento guardado en: {plot_filepath}")
-    plt.show()
+        weights_df.plot(kind='bar', stacked=True, colormap='viridis', legend=None, ax=plt.gca())
+        plt.title('Evolución de Pesos en Rebalanceos', fontsize=16, weight='bold')
+        plt.xlabel("Rebalanceos")
+        plt.ylabel("Proporción de la cartera")
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
+        plt.xticks(rotation=45)
+        filepath = os.path.join(run_dir, "evolucion_pesos.png")
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"Gráfico guardado: {filepath}")
 
 
 # -----------------------------------------------------------------------------

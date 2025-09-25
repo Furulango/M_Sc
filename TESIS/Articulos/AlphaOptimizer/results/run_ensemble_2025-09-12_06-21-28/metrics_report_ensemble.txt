@@ -1,0 +1,21 @@
+============================================================
+METRICAS DE RENDIMIENTO (ENSEMBLE LSTM-RF)
+============================================================
+
+LSTM-RF ENSEMBLE + GA:
+   Retorno Anual: 38.11%
+   Volatilidad Anual: 31.55%
+   Sharpe Ratio: 1.144
+   Max Drawdown: -53.30%
+   Valor Final: $1,604,494
+   Costos Transaccion: $4,113.06
+   Impacto en Rendimiento: 4.11%
+
+BENCHMARK (EQUIPONDERADO):
+   Retorno Anual: 34.32%
+   Volatilidad Anual: 28.25%
+   Sharpe Ratio: 1.144
+   Max Drawdown: -49.04%
+   Valor Final: $1,258,170
+   Costos Transaccion: $100.00
+   Impacto en Rendimiento: 0.10%
