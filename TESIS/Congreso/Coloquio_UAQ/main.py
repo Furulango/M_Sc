@@ -4,15 +4,13 @@ import warnings
 import numpy as np
 import pandas as pd
 from scipy.integrate import solve_ivp
-from scipy.stats import f_oneway
 from tqdm import tqdm
 
 warnings.filterwarnings('ignore')
-
 os.makedirs('results', exist_ok=True)
 
-N_RUNS = 10
-MAX_EVALUATIONS = 10000
+N_RUNS = 5  # Reducido para pruebas más rápidas
+MAX_EVALUATIONS = 5000  # Reducido para pruebas más rápidas
 
 TRUE_PARAMS = np.array([2.45, 1.83, 0.008, 0.008, 0.203, 0.02, 0.001])
 PARAM_NAMES = ['rs', 'rr', 'Lls', 'Llr', 'Lm', 'J', 'B']
@@ -49,7 +47,7 @@ def induction_motor_model(t, x, params, vqs, vds):
     
     return np.array([*di_dt, dwr_dt])
 
-def simulate_motor(params, t_span=[0, 2], n_points=500):
+def simulate_motor(params, t_span=[0, 1], n_points=200):  # Reducido tiempo y puntos
     vqs, vds = 220 * np.sqrt(2) / np.sqrt(3), 0
     initial_state = [0, 0, 0, 0, 0]
     
@@ -60,8 +58,8 @@ def simulate_motor(params, t_span=[0, 2], n_points=500):
             y0=initial_state,
             method='RK45',
             dense_output=True,
-            rtol=1e-6,
-            atol=1e-8
+            rtol=1e-5,  # Tolerancia menos estricta
+            atol=1e-7   # Tolerancia menos estricta
         )
         
         t = np.linspace(t_span[0], t_span[1], n_points)
@@ -102,7 +100,7 @@ class MotorObjective:
         return total_error if np.isfinite(total_error) else 1e12
 
 class ParticleSwarmOptimizer:
-    def __init__(self, objective_func, bounds, n_particles=50, max_iter=200):
+    def __init__(self, objective_func, bounds, n_particles=30, max_iter=100):
         self.objective_func = objective_func
         self.lb, self.ub = bounds
         self.n_particles = n_particles
@@ -147,7 +145,7 @@ class ParticleSwarmOptimizer:
         return gbest_cost, gbest_pos
 
 class GreyWolfOptimizer:
-    def __init__(self, objective_func, bounds, n_wolves=50, max_iter=200):
+    def __init__(self, objective_func, bounds, n_wolves=30, max_iter=100):
         self.objective_func = objective_func
         self.lb, self.ub = bounds
         self.n_wolves = n_wolves
@@ -167,12 +165,23 @@ class GreyWolfOptimizer:
         for it in range(self.max_iter):
             for i in range(self.n_wolves):
                 fitness = self.objective_func(positions[i, :])
+                
+                # CORRECCIÓN CRÍTICA: Las condiciones estaban mal
                 if fitness < alpha_score:
-                    alpha_score, alpha_pos = fitness, positions[i, :].copy()
-                elif alpha_score < fitness < beta_score:
-                    beta_score, beta_pos = fitness, positions[i, :].copy()
-                elif beta_score < fitness < delta_score:
-                    delta_score, delta_pos = fitness, positions[i, :].copy()
+                    delta_score = beta_score  # El beta anterior pasa a delta
+                    delta_pos = beta_pos.copy()
+                    beta_score = alpha_score  # El alpha anterior pasa a beta
+                    beta_pos = alpha_pos.copy()
+                    alpha_score = fitness      # El nuevo mejor es alpha
+                    alpha_pos = positions[i, :].copy()
+                elif fitness < beta_score:
+                    delta_score = beta_score  # El beta anterior pasa a delta
+                    delta_pos = beta_pos.copy()
+                    beta_score = fitness      # El nuevo es beta
+                    beta_pos = positions[i, :].copy()
+                elif fitness < delta_score:
+                    delta_score = fitness      # El nuevo es delta
+                    delta_pos = positions[i, :].copy()
             
             a = 2 - it * (2 / self.max_iter)
 
@@ -202,11 +211,12 @@ class GreyWolfOptimizer:
         return alpha_score, alpha_pos
 
 def run_comparison_study():
-    print("Generando datos de referencia del motor real...")
+    print("Generando datos de referencia del motor...")
     _, true_outputs = simulate_motor(TRUE_PARAMS)
     target_current = true_outputs['current']
     target_rpm = true_outputs['rpm']
     
+    # Añadir ruido
     noise_level = 0.01
     target_current += np.random.normal(0, np.std(target_current) * noise_level, len(target_current))
     target_rpm += np.random.normal(0, np.std(target_rpm) * noise_level, len(target_rpm))
@@ -219,14 +229,14 @@ def run_comparison_study():
     all_results = []
 
     for alg_name, AlgClass in algorithms.items():
-        print(f"\n{'='*30}\nEjecutando {alg_name} ({N_RUNS} veces)\n{'='*30}")
+        print(f"\nEjecutando {alg_name} ({N_RUNS} veces)")
         
-        for i in tqdm(range(N_RUNS), desc=f"   {alg_name} Progress"):
+        for i in tqdm(range(N_RUNS), desc=f"{alg_name}"):
             start_time = time.time()
             
             objective_function = MotorObjective(target_current, target_rpm)
             
-            n_agents = 50
+            n_agents = 30
             max_iterations = MAX_EVALUATIONS // n_agents
             
             optimizer = AlgClass(objective_function, PARAM_BOUNDS, n_agents, max_iterations)
@@ -255,31 +265,29 @@ def run_comparison_study():
     results_df.to_csv(output_path, index=False, float_format='%.6f')
     print(f"\nResultados guardados en: {output_path}")
 
-    print("\n" + "="*80)
-    print("RESUMEN ESTADÍSTICO FINAL")
-    print("="*80)
+    print("\n" + "="*60)
+    print("RESUMEN DE RESULTADOS")
+    print("="*60)
     
-    summary = results_df.groupby('algorithm').agg({
-        'param_error_perc': ['mean', 'std', 'min', 'max'],
-        'time_s': ['mean', 'std']
-    }).round(3)
+    # Resumen simple
+    for alg in ['PSO', 'GWO']:
+        alg_data = results_df[results_df['algorithm'] == alg]
+        print(f"\n{alg}:")
+        print(f"  Error promedio: {alg_data['param_error_perc'].mean():.2f}%")
+        print(f"  Mejor error: {alg_data['param_error_perc'].min():.2f}%")
+        print(f"  Tiempo promedio: {alg_data['time_s'].mean():.2f} segundos")
     
-    print(summary)
+    # Determinar ganador
+    pso_mean = results_df[results_df['algorithm'] == 'PSO']['param_error_perc'].mean()
+    gwo_mean = results_df[results_df['algorithm'] == 'GWO']['param_error_perc'].mean()
     
-    print("\n" + "-"*80)
-    print("Análisis de Varianza (ANOVA) para el error de parámetros:")
-    
-    pso_errors = results_df[results_df['algorithm'] == 'PSO']['param_error_perc']
-    gwo_errors = results_df[results_df['algorithm'] == 'GWO']['param_error_perc']
-    
-    f_stat, p_value = f_oneway(pso_errors, gwo_errors)
-    print(f"   P-value: {p_value:.4f}")
-    if p_value < 0.05:
-        print("   -> Existe una diferencia estadísticamente significativa entre los algoritmos.")
+    print(f"\n{'='*60}")
+    if abs(pso_mean - gwo_mean) < 0.5:
+        print("Ambos algoritmos tienen desempeño similar")
+    elif pso_mean < gwo_mean:
+        print(f"PSO es mejor por {gwo_mean - pso_mean:.2f}%")
     else:
-        print("   -> No hay evidencia de una diferencia significativa entre los algoritmos.")
-    print("-"*80)
-
+        print(f"GWO es mejor por {pso_mean - gwo_mean:.2f}%")
 
 if __name__ == "__main__":
     run_comparison_study()
