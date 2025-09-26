@@ -190,14 +190,23 @@ class SimpleGWO:
 
 def main():
     print("="*60)
-    print("COMPARACIÓN PSO vs GWO - Versión Simplificada")
+    print("COMPARACIÓN PSO vs GWO - MEJORADA")
     print("="*60)
-    
-    # Generar datos objetivo
+
     print("\n1. Generando datos de referencia...")
-    target_current, target_rpm = simulate_motor_simple(TRUE_PARAMS)
-    print(f"   Datos generados: {len(target_current)} puntos")
-    
+    target_current, target_rpm, target_torque = simulate_motor(TRUE_PARAMS)
+
+    noise_percentage = 0.02
+
+    noise_c = np.random.normal(0, np.max(target_current) * noise_percentage, len(target_current))
+    noise_r = np.random.normal(0, np.max(target_rpm) * noise_percentage, len(target_rpm))
+    noise_t = np.random.normal(0, np.max(target_torque) * noise_percentage, len(target_torque))
+
+    target_current += noise_c
+    target_rpm += noise_r
+    target_torque += noise_t
+
+    print(f"   Datos generados y ruido del {noise_percentage * 100}% aplicado.")
     results = []
     
     # PSO
