@@ -3,7 +3,6 @@
 *.gif
 *.bmp
 *.tiff
-*.svg
 *.pyc
 *.log
 *.webp
